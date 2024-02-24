@@ -30,7 +30,7 @@ The main idea behind the development of this program was to lock the mouse point
 
 You may find different needs to lock the mouse. 
 
-This is a very old project, with ugly source-code, and probably I will not renew it.
+This is an old project, with ugly source-code, and probably I will not rewrite it with good and modern habbits.
 
 ## 👌 Features
 
