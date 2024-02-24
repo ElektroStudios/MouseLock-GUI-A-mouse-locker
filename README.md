@@ -28,6 +28,10 @@ winforms
 
 The main idea behind the development of this program was to lock the mouse pointer when playing old video games that didn't lock the mouse and that caused problems.
 
+You may find different needs to lock the mouse. 
+
+This is a very old project, with ugly source-code, and probably I will not renew it.
+
 ## 👌 Features
 
  - Automatically locks the mouse when MouseLock program runs.
