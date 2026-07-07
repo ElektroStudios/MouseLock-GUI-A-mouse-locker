@@ -1,4 +1,4 @@
-# MouseLock GUI Change Log 📋
+﻿# MouseLock GUI Change Log 📋
 
 ## v1.1 (2024) *(current)* 🆕
 #### 🌟 Improvements:
