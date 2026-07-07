@@ -72,11 +72,10 @@
   </PropertyGroup>
   <ItemGroup>
     <Reference Include="CButtonLib">
-      <HintPath>..\..\..\Users\Administrador\Documents\Visual Studio 2012\Controls\Buttons\CButtonLib.dll</HintPath>
+      <HintPath>References\CButtonLib.dll</HintPath>
     </Reference>
-    <Reference Include="gTimePickerControl, Version=1.7.4752.37443, Culture=neutral, processorArchitecture=MSIL">
-      <SpecificVersion>False</SpecificVersion>
-      <HintPath>bin\Debug\gTimePickerControl.dll</HintPath>
+    <Reference Include="gTimePickerControl">
+      <HintPath>References\gTimePickerControl.dll</HintPath>
     </Reference>
     <Reference Include="System" />
     <Reference Include="System.Drawing" />

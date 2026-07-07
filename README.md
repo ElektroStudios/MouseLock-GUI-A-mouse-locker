@@ -93,9 +93,14 @@ I built this humble utility to solve this exact irritation, giving gamers an aut
 
 - Microsoft Windows OS.
 
-## 🤖 Getting Started
+## 🚀 Getting Started
 
-Download the latest release by clicking [here](https://github.com/ElektroStudios/MouseLock-GUI-A-mouse-locker/releases/latest),
+1. Navigate to the **[Releases page](https://github.com/ElektroStudios/MouseLock-GUI-A-mouse-locker/releases/latest)**.
+2. Download the latest `.zip` archive or the `.exe` setup installer, depending on your preference.
+3. If you downloaded the `.zip` archive, extract its contents to your preferred directory.
+   <br> 
+   If you downloaded the `.exe` file, run it and follow the installation wizard.
+4. Run the executable file to launch the application.
 
 ## 🔄 Change Log
 
