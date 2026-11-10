@@ -2,7 +2,7 @@
 # CUSTOMIZABLE TEMPLATE REPOSITORY VARIABLES
 # 
 env:
-  SOLUTION_NAME: "MouseLock GUI"
+  SOLUTION_NAME: "MouseLock"
   SOLUTION_EXT:  "sln"
   SONAR_PROJECT_KEY:  "ElektroStudios_MouseLock-GUI-A-mouse-locker"
   SONAR_ORGANIZATION: "elektrostudios"
