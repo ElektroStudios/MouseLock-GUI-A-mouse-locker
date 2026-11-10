@@ -77,9 +77,9 @@ I built this humble utility to solve this exact irritation, giving gamers an aut
 ## 🖼️ Screenshots
 
 <p align="center">
-  <img src="Images/screenshot01png" alt="Screenshot 1" width="38%">  <img src="Images/screenshot02.png" alt="Screenshot 2" width="38%">
+  <img src="Images/screenshot01.png" alt="Screenshot 1" width="48%">  <img src="Images/screenshot02.png" alt="Screenshot 2" width="48%">
   <br><br>
-  <img src="Images/screenshot03.png" alt="Screenshot 3" width="20%">
+  <img src="Images/screenshot03.png" alt="Screenshot 3" >
 </p>
 
 ## 🤖 Features
