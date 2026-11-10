@@ -2,7 +2,7 @@
 # CUSTOMIZABLE TEMPLATE REPOSITORY VARIABLES
 # 
 environment:
-  APP_DIR_NAME: "MouseLock GUI"
+  APP_DIR_NAME: "MouseLock"
   SOLUTION_EXT: "sln"
 # ------------------------------------------
 
