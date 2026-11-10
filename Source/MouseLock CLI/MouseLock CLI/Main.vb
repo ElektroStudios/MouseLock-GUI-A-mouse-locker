@@ -60,7 +60,7 @@ Friend Module MainModule
     Private ReadOnly screenCenterX As Integer = (GetSystemMetrics(SM_CXSCREEN) \ 2)
     Private ReadOnly screenCenterY As Integer = (GetSystemMetrics(SM_CYSCREEN) \ 2)
 
-    Private ReadOnly numberRegex As New Regex("\D", RegexOptions.Compiled)
+    Private ReadOnly numberRegex As New Regex("\D", RegexOptions.Compiled, TimeSpan.FromSeconds(10))
     Private ReadOnly commandLineArguments As List(Of String) = GetCommandLineArguments()
 
 #End Region
