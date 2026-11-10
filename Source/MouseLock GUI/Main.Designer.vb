@@ -24,25 +24,16 @@ Partial Class Main
     Private Sub InitializeComponent()
         Me.components = New System.ComponentModel.Container()
         Dim resources As System.ComponentModel.ComponentResourceManager = New System.ComponentModel.ComponentResourceManager(GetType(Main))
-        Dim TimeColors1 As gTimePickerControl.TimeColors = New gTimePickerControl.TimeColors()
         Dim DesignerRectTracker1 As CButtonLib.DesignerRectTracker = New CButtonLib.DesignerRectTracker()
         Dim CBlendItems1 As CButtonLib.cBlendItems = New CButtonLib.cBlendItems()
         Dim DesignerRectTracker2 As CButtonLib.DesignerRectTracker = New CButtonLib.DesignerRectTracker()
+        Dim TimeColors1 As gTimePickerControl.TimeColors = New gTimePickerControl.TimeColors()
         Dim DesignerRectTracker3 As CButtonLib.DesignerRectTracker = New CButtonLib.DesignerRectTracker()
         Dim CBlendItems2 As CButtonLib.cBlendItems = New CButtonLib.cBlendItems()
         Dim DesignerRectTracker4 As CButtonLib.DesignerRectTracker = New CButtonLib.DesignerRectTracker()
         Me.CheckBox_ToggleKey = New System.Windows.Forms.CheckBox()
-        Me.TextBox_Application_Name = New System.Windows.Forms.TextBox()
-        Me.Label_Application_Name = New System.Windows.Forms.Label()
-        Me.ComboBox_ToggleKey_SpecialKey = New System.Windows.Forms.ComboBox()
-        Me.ComboBox_ToggleKey_NormalKey = New System.Windows.Forms.ComboBox()
         Me.Label2 = New System.Windows.Forms.Label()
-        Me.Label_Application_Not_Running = New System.Windows.Forms.Label()
         Me.CheckBox_Remember_settings = New System.Windows.Forms.CheckBox()
-        Me.RadioButton_Lock_Application = New System.Windows.Forms.RadioButton()
-        Me.RadioButton_Lock_Time = New System.Windows.Forms.RadioButton()
-        Me.RadioButton_Lock_Startup = New System.Windows.Forms.RadioButton()
-        Me.ComboBox_Application_Not_Running = New System.Windows.Forms.ComboBox()
         Me.CheckBox_SysTray = New System.Windows.Forms.CheckBox()
         Me.ContextMenuStrip_SysTray = New System.Windows.Forms.ContextMenuStrip(Me.components)
         Me.ToolStrip_Lock = New System.Windows.Forms.ToolStripMenuItem()
@@ -53,28 +44,37 @@ Partial Class Main
         Me.NotifyIcon_SysTray = New System.Windows.Forms.NotifyIcon(Me.components)
         Me.Label_Delay = New System.Windows.Forms.Label()
         Me.Label_Interval = New System.Windows.Forms.Label()
-        Me.Numeric_Interval = New System.Windows.Forms.NumericUpDown()
-        Me.Numeric_Delay = New System.Windows.Forms.NumericUpDown()
-        Me.Panel_Lock_Type = New System.Windows.Forms.Panel()
-        Me.GTimePicker1 = New gTimePickerControl.gTimePicker()
-        Me.Button_Running_applications = New CButtonLib.CButton()
         Me.Label_S = New System.Windows.Forms.Label()
         Me.Label_MS = New System.Windows.Forms.Label()
         Me.Button_Lock_Unlock = New CButtonLib.CButton()
         Me.PictureBox_Logo = New System.Windows.Forms.PictureBox()
+        Me.ToolTip_Main = New System.Windows.Forms.ToolTip(Me.components)
+        Me.ToggleSwitch_DarkTheme = New MouseLock.CustomControls.ThemeToggleSwitch()
+        Me.Numeric_Interval = New MouseLock.CustomControls.ThemedNumericUpDown()
+        Me.Panel_Lock_Type = New MouseLock.CustomControls.ThemedBorderPanel()
+        Me.GTimePicker1 = New gTimePickerControl.gTimePicker()
+        Me.Button_Running_applications = New CButtonLib.CButton()
+        Me.RadioButton_Lock_Startup = New System.Windows.Forms.RadioButton()
+        Me.TextBox_Application_Name = New System.Windows.Forms.TextBox()
+        Me.Label_Application_Name = New System.Windows.Forms.Label()
+        Me.ComboBox_Application_Not_Running = New MouseLock.CustomControls.ThemedComboBox()
+        Me.Label_Application_Not_Running = New System.Windows.Forms.Label()
+        Me.RadioButton_Lock_Application = New System.Windows.Forms.RadioButton()
+        Me.RadioButton_Lock_Time = New System.Windows.Forms.RadioButton()
+        Me.ComboBox_ToggleKey_SpecialKey = New MouseLock.CustomControls.ThemedComboBox()
+        Me.ComboBox_ToggleKey_NormalKey = New MouseLock.CustomControls.ThemedComboBox()
+        Me.Numeric_Delay = New MouseLock.CustomControls.ThemedNumericUpDown()
         Me.ContextMenuStrip_SysTray.SuspendLayout()
-        CType(Me.Numeric_Interval, System.ComponentModel.ISupportInitialize).BeginInit()
-        CType(Me.Numeric_Delay, System.ComponentModel.ISupportInitialize).BeginInit()
-        Me.Panel_Lock_Type.SuspendLayout()
         CType(Me.PictureBox_Logo, System.ComponentModel.ISupportInitialize).BeginInit()
+        CType(Me.Numeric_Interval, System.ComponentModel.ISupportInitialize).BeginInit()
+        Me.Panel_Lock_Type.SuspendLayout()
+        CType(Me.Numeric_Delay, System.ComponentModel.ISupportInitialize).BeginInit()
         Me.SuspendLayout()
         '
         'CheckBox_ToggleKey
         '
         Me.CheckBox_ToggleKey.AutoSize = True
-        Me.CheckBox_ToggleKey.BackColor = System.Drawing.Color.Transparent
         Me.CheckBox_ToggleKey.Cursor = System.Windows.Forms.Cursors.Hand
-        Me.CheckBox_ToggleKey.ForeColor = System.Drawing.Color.Gainsboro
         Me.CheckBox_ToggleKey.Location = New System.Drawing.Point(20, 232)
         Me.CheckBox_ToggleKey.Name = "CheckBox_ToggleKey"
         Me.CheckBox_ToggleKey.Size = New System.Drawing.Size(182, 17)
@@ -82,87 +82,19 @@ Partial Class Main
         Me.CheckBox_ToggleKey.Text = "Activate Enable/Disable hotkey :"
         Me.CheckBox_ToggleKey.UseVisualStyleBackColor = False
         '
-        'TextBox_Application_Name
-        '
-        Me.TextBox_Application_Name.BackColor = System.Drawing.Color.Gainsboro
-        Me.TextBox_Application_Name.Enabled = False
-        Me.TextBox_Application_Name.Font = New System.Drawing.Font("Microsoft Sans Serif", 8.25!, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, CType(0, Byte))
-        Me.TextBox_Application_Name.ForeColor = System.Drawing.Color.Black
-        Me.TextBox_Application_Name.Location = New System.Drawing.Point(153, 78)
-        Me.TextBox_Application_Name.Name = "TextBox_Application_Name"
-        Me.TextBox_Application_Name.Size = New System.Drawing.Size(145, 20)
-        Me.TextBox_Application_Name.TabIndex = 3
-        Me.TextBox_Application_Name.Text = "Example1.exe;Example2.exe"
-        '
-        'Label_Application_Name
-        '
-        Me.Label_Application_Name.AutoSize = True
-        Me.Label_Application_Name.BackColor = System.Drawing.Color.Transparent
-        Me.Label_Application_Name.Enabled = False
-        Me.Label_Application_Name.ForeColor = System.Drawing.Color.Gainsboro
-        Me.Label_Application_Name.Location = New System.Drawing.Point(25, 81)
-        Me.Label_Application_Name.Name = "Label_Application_Name"
-        Me.Label_Application_Name.Size = New System.Drawing.Size(99, 13)
-        Me.Label_Application_Name.TabIndex = 4
-        Me.Label_Application_Name.Text = "Application names :"
-        '
-        'ComboBox_ToggleKey_SpecialKey
-        '
-        Me.ComboBox_ToggleKey_SpecialKey.BackColor = System.Drawing.Color.FromArgb(CType(CType(0, Byte), Integer), CType(CType(74, Byte), Integer), CType(CType(121, Byte), Integer))
-        Me.ComboBox_ToggleKey_SpecialKey.Cursor = System.Windows.Forms.Cursors.Hand
-        Me.ComboBox_ToggleKey_SpecialKey.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList
-        Me.ComboBox_ToggleKey_SpecialKey.Enabled = False
-        Me.ComboBox_ToggleKey_SpecialKey.ForeColor = System.Drawing.Color.Gainsboro
-        Me.ComboBox_ToggleKey_SpecialKey.FormattingEnabled = True
-        Me.ComboBox_ToggleKey_SpecialKey.Items.AddRange(New Object() {"NONE", "ALT", "CTRL", "SHIFT"})
-        Me.ComboBox_ToggleKey_SpecialKey.Location = New System.Drawing.Point(200, 230)
-        Me.ComboBox_ToggleKey_SpecialKey.Name = "ComboBox_ToggleKey_SpecialKey"
-        Me.ComboBox_ToggleKey_SpecialKey.Size = New System.Drawing.Size(55, 21)
-        Me.ComboBox_ToggleKey_SpecialKey.TabIndex = 5
-        '
-        'ComboBox_ToggleKey_NormalKey
-        '
-        Me.ComboBox_ToggleKey_NormalKey.BackColor = System.Drawing.Color.FromArgb(CType(CType(0, Byte), Integer), CType(CType(74, Byte), Integer), CType(CType(121, Byte), Integer))
-        Me.ComboBox_ToggleKey_NormalKey.Cursor = System.Windows.Forms.Cursors.Hand
-        Me.ComboBox_ToggleKey_NormalKey.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList
-        Me.ComboBox_ToggleKey_NormalKey.Enabled = False
-        Me.ComboBox_ToggleKey_NormalKey.ForeColor = System.Drawing.Color.Gainsboro
-        Me.ComboBox_ToggleKey_NormalKey.FormattingEnabled = True
-        Me.ComboBox_ToggleKey_NormalKey.Items.AddRange(New Object() {"A", "B", "C", "D", "E", "F", "G", "H", "I", "J", "K", "L", "M", "N", "O", "P", "Q", "R", "S", "T", "U", "V", "W", "X", "Y", "Z", "0", "1", "2", "3", "4", "5", "6", "7", "8", "9", "F1", "F2", "F3", "F4", "F5", "F6", "F7", "F8", "F9", "F10", "F11", "F12"})
-        Me.ComboBox_ToggleKey_NormalKey.Location = New System.Drawing.Point(268, 230)
-        Me.ComboBox_ToggleKey_NormalKey.Name = "ComboBox_ToggleKey_NormalKey"
-        Me.ComboBox_ToggleKey_NormalKey.Size = New System.Drawing.Size(43, 21)
-        Me.ComboBox_ToggleKey_NormalKey.TabIndex = 6
-        '
         'Label2
         '
         Me.Label2.AutoSize = True
-        Me.Label2.BackColor = System.Drawing.Color.Transparent
-        Me.Label2.ForeColor = System.Drawing.Color.Gainsboro
-        Me.Label2.Location = New System.Drawing.Point(255, 233)
+        Me.Label2.Location = New System.Drawing.Point(261, 233)
         Me.Label2.Name = "Label2"
         Me.Label2.Size = New System.Drawing.Size(13, 13)
         Me.Label2.TabIndex = 7
         Me.Label2.Text = "+"
         '
-        'Label_Application_Not_Running
-        '
-        Me.Label_Application_Not_Running.AutoSize = True
-        Me.Label_Application_Not_Running.BackColor = System.Drawing.Color.Transparent
-        Me.Label_Application_Not_Running.Enabled = False
-        Me.Label_Application_Not_Running.ForeColor = System.Drawing.Color.Gainsboro
-        Me.Label_Application_Not_Running.Location = New System.Drawing.Point(25, 108)
-        Me.Label_Application_Not_Running.Name = "Label_Application_Not_Running"
-        Me.Label_Application_Not_Running.Size = New System.Drawing.Size(125, 13)
-        Me.Label_Application_Not_Running.TabIndex = 10
-        Me.Label_Application_Not_Running.Text = "When application ends..."
-        '
         'CheckBox_Remember_settings
         '
         Me.CheckBox_Remember_settings.AutoSize = True
-        Me.CheckBox_Remember_settings.BackColor = System.Drawing.Color.Transparent
         Me.CheckBox_Remember_settings.Cursor = System.Windows.Forms.Cursors.Hand
-        Me.CheckBox_Remember_settings.ForeColor = System.Drawing.Color.Gainsboro
         Me.CheckBox_Remember_settings.Location = New System.Drawing.Point(200, 287)
         Me.CheckBox_Remember_settings.Name = "CheckBox_Remember_settings"
         Me.CheckBox_Remember_settings.Size = New System.Drawing.Size(116, 17)
@@ -170,71 +102,10 @@ Partial Class Main
         Me.CheckBox_Remember_settings.Text = "Remember settings"
         Me.CheckBox_Remember_settings.UseVisualStyleBackColor = False
         '
-        'RadioButton_Lock_Application
-        '
-        Me.RadioButton_Lock_Application.AutoSize = True
-        Me.RadioButton_Lock_Application.BackColor = System.Drawing.Color.Transparent
-        Me.RadioButton_Lock_Application.Cursor = System.Windows.Forms.Cursors.Hand
-        Me.RadioButton_Lock_Application.ForeColor = System.Drawing.Color.Gainsboro
-        Me.RadioButton_Lock_Application.Location = New System.Drawing.Point(7, 55)
-        Me.RadioButton_Lock_Application.Name = "RadioButton_Lock_Application"
-        Me.RadioButton_Lock_Application.Size = New System.Drawing.Size(232, 17)
-        Me.RadioButton_Lock_Application.TabIndex = 13
-        Me.RadioButton_Lock_Application.TabStop = True
-        Me.RadioButton_Lock_Application.Tag = "3"
-        Me.RadioButton_Lock_Application.Text = "Lock the mouse when application is running"
-        Me.RadioButton_Lock_Application.UseVisualStyleBackColor = False
-        '
-        'RadioButton_Lock_Time
-        '
-        Me.RadioButton_Lock_Time.AutoSize = True
-        Me.RadioButton_Lock_Time.BackColor = System.Drawing.Color.Transparent
-        Me.RadioButton_Lock_Time.Cursor = System.Windows.Forms.Cursors.Hand
-        Me.RadioButton_Lock_Time.ForeColor = System.Drawing.Color.Gainsboro
-        Me.RadioButton_Lock_Time.Location = New System.Drawing.Point(7, 32)
-        Me.RadioButton_Lock_Time.Name = "RadioButton_Lock_Time"
-        Me.RadioButton_Lock_Time.Size = New System.Drawing.Size(170, 17)
-        Me.RadioButton_Lock_Time.TabIndex = 14
-        Me.RadioButton_Lock_Time.TabStop = True
-        Me.RadioButton_Lock_Time.Tag = "2"
-        Me.RadioButton_Lock_Time.Text = "Lock the mouse at certain time"
-        Me.RadioButton_Lock_Time.UseVisualStyleBackColor = False
-        '
-        'RadioButton_Lock_Startup
-        '
-        Me.RadioButton_Lock_Startup.AutoSize = True
-        Me.RadioButton_Lock_Startup.BackColor = System.Drawing.Color.Transparent
-        Me.RadioButton_Lock_Startup.Cursor = System.Windows.Forms.Cursors.Hand
-        Me.RadioButton_Lock_Startup.ForeColor = System.Drawing.Color.Gainsboro
-        Me.RadioButton_Lock_Startup.Location = New System.Drawing.Point(7, 9)
-        Me.RadioButton_Lock_Startup.Name = "RadioButton_Lock_Startup"
-        Me.RadioButton_Lock_Startup.Size = New System.Drawing.Size(148, 17)
-        Me.RadioButton_Lock_Startup.TabIndex = 15
-        Me.RadioButton_Lock_Startup.TabStop = True
-        Me.RadioButton_Lock_Startup.Tag = "1"
-        Me.RadioButton_Lock_Startup.Text = "Lock the mouse at startup"
-        Me.RadioButton_Lock_Startup.UseVisualStyleBackColor = False
-        '
-        'ComboBox_Application_Not_Running
-        '
-        Me.ComboBox_Application_Not_Running.BackColor = System.Drawing.Color.FromArgb(CType(CType(0, Byte), Integer), CType(CType(74, Byte), Integer), CType(CType(121, Byte), Integer))
-        Me.ComboBox_Application_Not_Running.Cursor = System.Windows.Forms.Cursors.Hand
-        Me.ComboBox_Application_Not_Running.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList
-        Me.ComboBox_Application_Not_Running.Enabled = False
-        Me.ComboBox_Application_Not_Running.ForeColor = System.Drawing.Color.Gainsboro
-        Me.ComboBox_Application_Not_Running.FormattingEnabled = True
-        Me.ComboBox_Application_Not_Running.Items.AddRange(New Object() {"Unlock mouse", "Kill MouseLock"})
-        Me.ComboBox_Application_Not_Running.Location = New System.Drawing.Point(153, 104)
-        Me.ComboBox_Application_Not_Running.Name = "ComboBox_Application_Not_Running"
-        Me.ComboBox_Application_Not_Running.Size = New System.Drawing.Size(145, 21)
-        Me.ComboBox_Application_Not_Running.TabIndex = 16
-        '
         'CheckBox_SysTray
         '
         Me.CheckBox_SysTray.AutoSize = True
-        Me.CheckBox_SysTray.BackColor = System.Drawing.Color.Transparent
         Me.CheckBox_SysTray.Cursor = System.Windows.Forms.Cursors.Hand
-        Me.CheckBox_SysTray.ForeColor = System.Drawing.Color.Gainsboro
         Me.CheckBox_SysTray.Location = New System.Drawing.Point(200, 260)
         Me.CheckBox_SysTray.Name = "CheckBox_SysTray"
         Me.CheckBox_SysTray.Size = New System.Drawing.Size(113, 17)
@@ -293,8 +164,6 @@ Partial Class Main
         'Label_Delay
         '
         Me.Label_Delay.AutoSize = True
-        Me.Label_Delay.BackColor = System.Drawing.Color.Transparent
-        Me.Label_Delay.ForeColor = System.Drawing.Color.Gainsboro
         Me.Label_Delay.Location = New System.Drawing.Point(17, 260)
         Me.Label_Delay.Name = "Label_Delay"
         Me.Label_Delay.Size = New System.Drawing.Size(65, 13)
@@ -304,38 +173,111 @@ Partial Class Main
         'Label_Interval
         '
         Me.Label_Interval.AutoSize = True
-        Me.Label_Interval.BackColor = System.Drawing.Color.Transparent
-        Me.Label_Interval.ForeColor = System.Drawing.Color.Gainsboro
         Me.Label_Interval.Location = New System.Drawing.Point(17, 287)
         Me.Label_Interval.Name = "Label_Interval"
         Me.Label_Interval.Size = New System.Drawing.Size(65, 13)
         Me.Label_Interval.TabIndex = 25
         Me.Label_Interval.Text = "Lock delay :"
         '
+        'Label_S
+        '
+        Me.Label_S.AutoSize = True
+        Me.Label_S.Location = New System.Drawing.Point(140, 260)
+        Me.Label_S.Name = "Label_S"
+        Me.Label_S.Size = New System.Drawing.Size(12, 13)
+        Me.Label_S.TabIndex = 31
+        Me.Label_S.Text = "s"
+        '
+        'Label_MS
+        '
+        Me.Label_MS.AutoSize = True
+        Me.Label_MS.Location = New System.Drawing.Point(140, 286)
+        Me.Label_MS.Name = "Label_MS"
+        Me.Label_MS.Size = New System.Drawing.Size(20, 13)
+        Me.Label_MS.TabIndex = 32
+        Me.Label_MS.Text = "ms"
+        '
+        'Button_Lock_Unlock
+        '
+        Me.Button_Lock_Unlock.BorderColor = System.Drawing.Color.Black
+        DesignerRectTracker1.IsActive = False
+        DesignerRectTracker1.TrackerRectangle = CType(resources.GetObject("DesignerRectTracker1.TrackerRectangle"), System.Drawing.RectangleF)
+        Me.Button_Lock_Unlock.CenterPtTracker = DesignerRectTracker1
+        CBlendItems1.iColor = New System.Drawing.Color() {System.Drawing.Color.Green, System.Drawing.Color.Green, System.Drawing.Color.Green}
+        CBlendItems1.iPoint = New Single() {0!, 0.5!, 1.0!}
+        Me.Button_Lock_Unlock.ColorFillBlend = CBlendItems1
+        Me.Button_Lock_Unlock.Corners.All = 0
+        Me.Button_Lock_Unlock.Corners.LowerLeft = 0
+        Me.Button_Lock_Unlock.Corners.LowerRight = 0
+        Me.Button_Lock_Unlock.Corners.UpperLeft = 0
+        Me.Button_Lock_Unlock.Corners.UpperRight = 0
+        Me.Button_Lock_Unlock.Cursor = System.Windows.Forms.Cursors.Hand
+        Me.Button_Lock_Unlock.Dock = System.Windows.Forms.DockStyle.Bottom
+        DesignerRectTracker2.IsActive = False
+        DesignerRectTracker2.TrackerRectangle = CType(resources.GetObject("DesignerRectTracker2.TrackerRectangle"), System.Drawing.RectangleF)
+        Me.Button_Lock_Unlock.FocusPtTracker = DesignerRectTracker2
+        Me.Button_Lock_Unlock.Font = New System.Drawing.Font("Arial", 35.0!, System.Drawing.FontStyle.Bold)
+        Me.Button_Lock_Unlock.Image = Global.MouseLock.My.Resources.Resources.Lock_64x64
+        Me.Button_Lock_Unlock.ImageAlign = System.Drawing.ContentAlignment.TopRight
+        Me.Button_Lock_Unlock.ImageIndex = 0
+        Me.Button_Lock_Unlock.ImageSize = New System.Drawing.Size(42, 42)
+        Me.Button_Lock_Unlock.Location = New System.Drawing.Point(0, 340)
+        Me.Button_Lock_Unlock.Name = "Button_Lock_Unlock"
+        Me.Button_Lock_Unlock.SideImage = Global.MouseLock.My.Resources.Resources.Lock_64x64
+        Me.Button_Lock_Unlock.SideImageAlign = System.Drawing.ContentAlignment.TopLeft
+        Me.Button_Lock_Unlock.SideImageSize = New System.Drawing.Size(42, 42)
+        Me.Button_Lock_Unlock.Size = New System.Drawing.Size(334, 50)
+        Me.Button_Lock_Unlock.TabIndex = 33
+        Me.Button_Lock_Unlock.Text = "Lock now"
+        '
+        'PictureBox_Logo
+        '
+        Me.PictureBox_Logo.BackgroundImage = Global.MouseLock.My.Resources.Resources.Logo
+        Me.PictureBox_Logo.BackgroundImageLayout = System.Windows.Forms.ImageLayout.Zoom
+        Me.PictureBox_Logo.Dock = System.Windows.Forms.DockStyle.Top
+        Me.PictureBox_Logo.ErrorImage = Nothing
+        Me.PictureBox_Logo.Location = New System.Drawing.Point(0, 0)
+        Me.PictureBox_Logo.Name = "PictureBox_Logo"
+        Me.PictureBox_Logo.Size = New System.Drawing.Size(334, 70)
+        Me.PictureBox_Logo.TabIndex = 21
+        Me.PictureBox_Logo.TabStop = False
+        '
+        'ToolTip_Main
+        '
+        Me.ToolTip_Main.OwnerDraw = True
+        '
+        'ToggleSwitch_DarkTheme
+        '
+        Me.ToggleSwitch_DarkTheme.AccentColor = System.Drawing.SystemColors.Highlight
+        Me.ToggleSwitch_DarkTheme.AccessibleRole = System.Windows.Forms.AccessibleRole.CheckButton
+        Me.ToggleSwitch_DarkTheme.Cursor = System.Windows.Forms.Cursors.Hand
+        Me.ToggleSwitch_DarkTheme.DisabledForeColor = System.Drawing.SystemColors.GrayText
+        Me.ToggleSwitch_DarkTheme.Location = New System.Drawing.Point(199, 313)
+        Me.ToggleSwitch_DarkTheme.Name = "ToggleSwitch_DarkTheme"
+        Me.ToggleSwitch_DarkTheme.Size = New System.Drawing.Size(125, 20)
+        Me.ToggleSwitch_DarkTheme.TabIndex = 35
+        Me.ToggleSwitch_DarkTheme.Text = "Dark theme"
+        Me.ToolTip_Main.SetToolTip(Me.ToggleSwitch_DarkTheme, "Switches between the light and the dark theme.")
+        Me.ToggleSwitch_DarkTheme.TrackBorderColor = System.Drawing.SystemColors.ControlDarkDark
+        '
         'Numeric_Interval
         '
-        Me.Numeric_Interval.BackColor = System.Drawing.Color.Gainsboro
-        Me.Numeric_Interval.ForeColor = System.Drawing.Color.Black
+        Me.Numeric_Interval.ArrowColor = System.Drawing.SystemColors.ControlText
+        Me.Numeric_Interval.BorderColor = System.Drawing.SystemColors.ControlDark
+        Me.Numeric_Interval.ButtonBackColor = System.Drawing.SystemColors.Control
+        Me.Numeric_Interval.DisabledForeColor = System.Drawing.SystemColors.GrayText
+        Me.Numeric_Interval.FocusBorderColor = System.Drawing.SystemColors.Highlight
         Me.Numeric_Interval.Location = New System.Drawing.Point(82, 284)
         Me.Numeric_Interval.Maximum = New Decimal(New Integer() {9999, 0, 0, 0})
+        Me.Numeric_Interval.Minimum = New Decimal(New Integer() {1, 0, 0, 0})
         Me.Numeric_Interval.Name = "Numeric_Interval"
         Me.Numeric_Interval.Size = New System.Drawing.Size(56, 20)
         Me.Numeric_Interval.TabIndex = 26
         Me.Numeric_Interval.Value = New Decimal(New Integer() {10, 0, 0, 0})
         '
-        'Numeric_Delay
-        '
-        Me.Numeric_Delay.BackColor = System.Drawing.Color.Gainsboro
-        Me.Numeric_Delay.ForeColor = System.Drawing.Color.Black
-        Me.Numeric_Delay.Location = New System.Drawing.Point(82, 257)
-        Me.Numeric_Delay.Maximum = New Decimal(New Integer() {9999999, 0, 0, 0})
-        Me.Numeric_Delay.Name = "Numeric_Delay"
-        Me.Numeric_Delay.Size = New System.Drawing.Size(56, 20)
-        Me.Numeric_Delay.TabIndex = 27
-        '
         'Panel_Lock_Type
         '
-        Me.Panel_Lock_Type.BorderStyle = System.Windows.Forms.BorderStyle.FixedSingle
+        Me.Panel_Lock_Type.BorderColor = System.Drawing.SystemColors.ControlDark
         Me.Panel_Lock_Type.Controls.Add(Me.GTimePicker1)
         Me.Panel_Lock_Type.Controls.Add(Me.Button_Running_applications)
         Me.Panel_Lock_Type.Controls.Add(Me.RadioButton_Lock_Startup)
@@ -347,6 +289,7 @@ Partial Class Main
         Me.Panel_Lock_Type.Controls.Add(Me.RadioButton_Lock_Time)
         Me.Panel_Lock_Type.Location = New System.Drawing.Point(12, 79)
         Me.Panel_Lock_Type.Name = "Panel_Lock_Type"
+        Me.Panel_Lock_Type.Padding = New System.Windows.Forms.Padding(1)
         Me.Panel_Lock_Type.Size = New System.Drawing.Size(310, 138)
         Me.Panel_Lock_Type.TabIndex = 30
         '
@@ -391,12 +334,12 @@ Partial Class Main
         'Button_Running_applications
         '
         Me.Button_Running_applications.BorderColor = System.Drawing.Color.Transparent
-        DesignerRectTracker1.IsActive = True
-        DesignerRectTracker1.TrackerRectangle = CType(resources.GetObject("DesignerRectTracker1.TrackerRectangle"), System.Drawing.RectangleF)
-        Me.Button_Running_applications.CenterPtTracker = DesignerRectTracker1
-        CBlendItems1.iColor = New System.Drawing.Color() {System.Drawing.Color.Transparent, System.Drawing.Color.Transparent, System.Drawing.Color.Transparent}
-        CBlendItems1.iPoint = New Single() {0!, 0.5!, 1.0!}
-        Me.Button_Running_applications.ColorFillBlend = CBlendItems1
+        DesignerRectTracker3.IsActive = True
+        DesignerRectTracker3.TrackerRectangle = CType(resources.GetObject("DesignerRectTracker3.TrackerRectangle"), System.Drawing.RectangleF)
+        Me.Button_Running_applications.CenterPtTracker = DesignerRectTracker3
+        CBlendItems2.iColor = New System.Drawing.Color() {System.Drawing.Color.Transparent, System.Drawing.Color.Transparent, System.Drawing.Color.Transparent}
+        CBlendItems2.iPoint = New Single() {0!, 0.5!, 1.0!}
+        Me.Button_Running_applications.ColorFillBlend = CBlendItems2
         Me.Button_Running_applications.Corners.All = 2
         Me.Button_Running_applications.Corners.LowerLeft = 2
         Me.Button_Running_applications.Corners.LowerRight = 2
@@ -405,9 +348,9 @@ Partial Class Main
         Me.Button_Running_applications.Cursor = System.Windows.Forms.Cursors.Hand
         Me.Button_Running_applications.FocalPoints.CenterPtX = 0.3125!
         Me.Button_Running_applications.FocalPoints.CenterPtY = 0.6!
-        DesignerRectTracker2.IsActive = False
-        DesignerRectTracker2.TrackerRectangle = CType(resources.GetObject("DesignerRectTracker2.TrackerRectangle"), System.Drawing.RectangleF)
-        Me.Button_Running_applications.FocusPtTracker = DesignerRectTracker2
+        DesignerRectTracker4.IsActive = False
+        DesignerRectTracker4.TrackerRectangle = CType(resources.GetObject("DesignerRectTracker4.TrackerRectangle"), System.Drawing.RectangleF)
+        Me.Button_Running_applications.FocusPtTracker = DesignerRectTracker4
         Me.Button_Running_applications.Image = Global.MouseLock.My.Resources.Resources.Running_Applications
         Me.Button_Running_applications.ImageIndex = 0
         Me.Button_Running_applications.ImageSize = New System.Drawing.Size(24, 24)
@@ -417,72 +360,141 @@ Partial Class Main
         Me.Button_Running_applications.TabIndex = 34
         Me.Button_Running_applications.Text = ""
         '
-        'Label_S
+        'RadioButton_Lock_Startup
         '
-        Me.Label_S.AutoSize = True
-        Me.Label_S.BackColor = System.Drawing.Color.Transparent
-        Me.Label_S.ForeColor = System.Drawing.Color.Gainsboro
-        Me.Label_S.Location = New System.Drawing.Point(140, 260)
-        Me.Label_S.Name = "Label_S"
-        Me.Label_S.Size = New System.Drawing.Size(12, 13)
-        Me.Label_S.TabIndex = 31
-        Me.Label_S.Text = "s"
+        Me.RadioButton_Lock_Startup.AutoSize = True
+        Me.RadioButton_Lock_Startup.Cursor = System.Windows.Forms.Cursors.Hand
+        Me.RadioButton_Lock_Startup.Location = New System.Drawing.Point(7, 9)
+        Me.RadioButton_Lock_Startup.Name = "RadioButton_Lock_Startup"
+        Me.RadioButton_Lock_Startup.Size = New System.Drawing.Size(148, 17)
+        Me.RadioButton_Lock_Startup.TabIndex = 15
+        Me.RadioButton_Lock_Startup.TabStop = True
+        Me.RadioButton_Lock_Startup.Tag = "1"
+        Me.RadioButton_Lock_Startup.Text = "Lock the mouse at startup"
+        Me.RadioButton_Lock_Startup.UseVisualStyleBackColor = False
         '
-        'Label_MS
+        'TextBox_Application_Name
         '
-        Me.Label_MS.AutoSize = True
-        Me.Label_MS.BackColor = System.Drawing.Color.Transparent
-        Me.Label_MS.ForeColor = System.Drawing.Color.Gainsboro
-        Me.Label_MS.Location = New System.Drawing.Point(140, 286)
-        Me.Label_MS.Name = "Label_MS"
-        Me.Label_MS.Size = New System.Drawing.Size(20, 13)
-        Me.Label_MS.TabIndex = 32
-        Me.Label_MS.Text = "ms"
+        Me.TextBox_Application_Name.Enabled = False
+        Me.TextBox_Application_Name.Font = New System.Drawing.Font("Microsoft Sans Serif", 8.25!, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, CType(0, Byte))
+        Me.TextBox_Application_Name.Location = New System.Drawing.Point(153, 78)
+        Me.TextBox_Application_Name.Name = "TextBox_Application_Name"
+        Me.TextBox_Application_Name.Size = New System.Drawing.Size(145, 20)
+        Me.TextBox_Application_Name.TabIndex = 3
+        Me.TextBox_Application_Name.Text = "Example1.exe;Example2.exe"
         '
-        'Button_Lock_Unlock
+        'Label_Application_Name
         '
-        Me.Button_Lock_Unlock.BorderColor = System.Drawing.Color.Black
-        DesignerRectTracker3.IsActive = False
-        DesignerRectTracker3.TrackerRectangle = CType(resources.GetObject("DesignerRectTracker3.TrackerRectangle"), System.Drawing.RectangleF)
-        Me.Button_Lock_Unlock.CenterPtTracker = DesignerRectTracker3
-        CBlendItems2.iColor = New System.Drawing.Color() {System.Drawing.Color.Green, System.Drawing.Color.Green, System.Drawing.Color.Green}
-        CBlendItems2.iPoint = New Single() {0!, 0.5!, 1.0!}
-        Me.Button_Lock_Unlock.ColorFillBlend = CBlendItems2
-        Me.Button_Lock_Unlock.Corners.All = 0
-        Me.Button_Lock_Unlock.Corners.LowerLeft = 0
-        Me.Button_Lock_Unlock.Corners.LowerRight = 0
-        Me.Button_Lock_Unlock.Corners.UpperLeft = 0
-        Me.Button_Lock_Unlock.Corners.UpperRight = 0
-        Me.Button_Lock_Unlock.Cursor = System.Windows.Forms.Cursors.Hand
-        Me.Button_Lock_Unlock.Dock = System.Windows.Forms.DockStyle.Bottom
-        DesignerRectTracker4.IsActive = False
-        DesignerRectTracker4.TrackerRectangle = CType(resources.GetObject("DesignerRectTracker4.TrackerRectangle"), System.Drawing.RectangleF)
-        Me.Button_Lock_Unlock.FocusPtTracker = DesignerRectTracker4
-        Me.Button_Lock_Unlock.Font = New System.Drawing.Font("Arial", 35.0!, System.Drawing.FontStyle.Bold)
-        Me.Button_Lock_Unlock.Image = Global.MouseLock.My.Resources.Resources.Lock_64x64
-        Me.Button_Lock_Unlock.ImageAlign = System.Drawing.ContentAlignment.TopRight
-        Me.Button_Lock_Unlock.ImageIndex = 0
-        Me.Button_Lock_Unlock.ImageSize = New System.Drawing.Size(42, 42)
-        Me.Button_Lock_Unlock.Location = New System.Drawing.Point(0, 312)
-        Me.Button_Lock_Unlock.Name = "Button_Lock_Unlock"
-        Me.Button_Lock_Unlock.SideImage = Global.MouseLock.My.Resources.Resources.Lock_64x64
-        Me.Button_Lock_Unlock.SideImageAlign = System.Drawing.ContentAlignment.TopLeft
-        Me.Button_Lock_Unlock.SideImageSize = New System.Drawing.Size(42, 42)
-        Me.Button_Lock_Unlock.Size = New System.Drawing.Size(334, 50)
-        Me.Button_Lock_Unlock.TabIndex = 33
-        Me.Button_Lock_Unlock.Text = "Lock now"
+        Me.Label_Application_Name.AutoSize = True
+        Me.Label_Application_Name.Enabled = False
+        Me.Label_Application_Name.Location = New System.Drawing.Point(25, 81)
+        Me.Label_Application_Name.Name = "Label_Application_Name"
+        Me.Label_Application_Name.Size = New System.Drawing.Size(99, 13)
+        Me.Label_Application_Name.TabIndex = 4
+        Me.Label_Application_Name.Text = "Application names :"
         '
-        'PictureBox_Logo
+        'ComboBox_Application_Not_Running
         '
-        Me.PictureBox_Logo.BackgroundImage = Global.MouseLock.My.Resources.Resources.Logo
-        Me.PictureBox_Logo.BackgroundImageLayout = System.Windows.Forms.ImageLayout.Zoom
-        Me.PictureBox_Logo.Dock = System.Windows.Forms.DockStyle.Top
-        Me.PictureBox_Logo.ErrorImage = Nothing
-        Me.PictureBox_Logo.Location = New System.Drawing.Point(0, 0)
-        Me.PictureBox_Logo.Name = "PictureBox_Logo"
-        Me.PictureBox_Logo.Size = New System.Drawing.Size(334, 70)
-        Me.PictureBox_Logo.TabIndex = 21
-        Me.PictureBox_Logo.TabStop = False
+        Me.ComboBox_Application_Not_Running.ArrowColor = System.Drawing.SystemColors.ControlText
+        Me.ComboBox_Application_Not_Running.BorderColor = System.Drawing.SystemColors.ControlDark
+        Me.ComboBox_Application_Not_Running.ButtonBackColor = System.Drawing.SystemColors.Control
+        Me.ComboBox_Application_Not_Running.Cursor = System.Windows.Forms.Cursors.Hand
+        Me.ComboBox_Application_Not_Running.DisabledBackColor = System.Drawing.SystemColors.Control
+        Me.ComboBox_Application_Not_Running.DisabledForeColor = System.Drawing.SystemColors.GrayText
+        Me.ComboBox_Application_Not_Running.Enabled = False
+        Me.ComboBox_Application_Not_Running.FormattingEnabled = True
+        Me.ComboBox_Application_Not_Running.HighlightBackColor = System.Drawing.SystemColors.Highlight
+        Me.ComboBox_Application_Not_Running.HighlightForeColor = System.Drawing.SystemColors.HighlightText
+        Me.ComboBox_Application_Not_Running.Items.AddRange(New Object() {"Unlock mouse", "Kill MouseLock"})
+        Me.ComboBox_Application_Not_Running.Location = New System.Drawing.Point(153, 104)
+        Me.ComboBox_Application_Not_Running.Name = "ComboBox_Application_Not_Running"
+        Me.ComboBox_Application_Not_Running.Size = New System.Drawing.Size(145, 21)
+        Me.ComboBox_Application_Not_Running.TabIndex = 16
+        '
+        'Label_Application_Not_Running
+        '
+        Me.Label_Application_Not_Running.AutoSize = True
+        Me.Label_Application_Not_Running.Enabled = False
+        Me.Label_Application_Not_Running.Location = New System.Drawing.Point(25, 108)
+        Me.Label_Application_Not_Running.Name = "Label_Application_Not_Running"
+        Me.Label_Application_Not_Running.Size = New System.Drawing.Size(125, 13)
+        Me.Label_Application_Not_Running.TabIndex = 10
+        Me.Label_Application_Not_Running.Text = "When application ends..."
+        '
+        'RadioButton_Lock_Application
+        '
+        Me.RadioButton_Lock_Application.AutoSize = True
+        Me.RadioButton_Lock_Application.Cursor = System.Windows.Forms.Cursors.Hand
+        Me.RadioButton_Lock_Application.Location = New System.Drawing.Point(7, 55)
+        Me.RadioButton_Lock_Application.Name = "RadioButton_Lock_Application"
+        Me.RadioButton_Lock_Application.Size = New System.Drawing.Size(232, 17)
+        Me.RadioButton_Lock_Application.TabIndex = 13
+        Me.RadioButton_Lock_Application.TabStop = True
+        Me.RadioButton_Lock_Application.Tag = "3"
+        Me.RadioButton_Lock_Application.Text = "Lock the mouse when application is running"
+        Me.RadioButton_Lock_Application.UseVisualStyleBackColor = False
+        '
+        'RadioButton_Lock_Time
+        '
+        Me.RadioButton_Lock_Time.AutoSize = True
+        Me.RadioButton_Lock_Time.Cursor = System.Windows.Forms.Cursors.Hand
+        Me.RadioButton_Lock_Time.Location = New System.Drawing.Point(7, 32)
+        Me.RadioButton_Lock_Time.Name = "RadioButton_Lock_Time"
+        Me.RadioButton_Lock_Time.Size = New System.Drawing.Size(170, 17)
+        Me.RadioButton_Lock_Time.TabIndex = 14
+        Me.RadioButton_Lock_Time.TabStop = True
+        Me.RadioButton_Lock_Time.Tag = "2"
+        Me.RadioButton_Lock_Time.Text = "Lock the mouse at certain time"
+        Me.RadioButton_Lock_Time.UseVisualStyleBackColor = False
+        '
+        'ComboBox_ToggleKey_SpecialKey
+        '
+        Me.ComboBox_ToggleKey_SpecialKey.ArrowColor = System.Drawing.SystemColors.ControlText
+        Me.ComboBox_ToggleKey_SpecialKey.BorderColor = System.Drawing.SystemColors.ControlDark
+        Me.ComboBox_ToggleKey_SpecialKey.ButtonBackColor = System.Drawing.SystemColors.Control
+        Me.ComboBox_ToggleKey_SpecialKey.Cursor = System.Windows.Forms.Cursors.Hand
+        Me.ComboBox_ToggleKey_SpecialKey.DisabledBackColor = System.Drawing.SystemColors.Control
+        Me.ComboBox_ToggleKey_SpecialKey.DisabledForeColor = System.Drawing.SystemColors.GrayText
+        Me.ComboBox_ToggleKey_SpecialKey.Enabled = False
+        Me.ComboBox_ToggleKey_SpecialKey.FormattingEnabled = True
+        Me.ComboBox_ToggleKey_SpecialKey.HighlightBackColor = System.Drawing.SystemColors.Highlight
+        Me.ComboBox_ToggleKey_SpecialKey.HighlightForeColor = System.Drawing.SystemColors.HighlightText
+        Me.ComboBox_ToggleKey_SpecialKey.Items.AddRange(New Object() {"NONE", "ALT", "CTRL", "SHIFT"})
+        Me.ComboBox_ToggleKey_SpecialKey.Location = New System.Drawing.Point(200, 230)
+        Me.ComboBox_ToggleKey_SpecialKey.Name = "ComboBox_ToggleKey_SpecialKey"
+        Me.ComboBox_ToggleKey_SpecialKey.Size = New System.Drawing.Size(62, 21)
+        Me.ComboBox_ToggleKey_SpecialKey.TabIndex = 5
+        '
+        'ComboBox_ToggleKey_NormalKey
+        '
+        Me.ComboBox_ToggleKey_NormalKey.ArrowColor = System.Drawing.SystemColors.ControlText
+        Me.ComboBox_ToggleKey_NormalKey.BorderColor = System.Drawing.SystemColors.ControlDark
+        Me.ComboBox_ToggleKey_NormalKey.ButtonBackColor = System.Drawing.SystemColors.Control
+        Me.ComboBox_ToggleKey_NormalKey.Cursor = System.Windows.Forms.Cursors.Hand
+        Me.ComboBox_ToggleKey_NormalKey.DisabledBackColor = System.Drawing.SystemColors.Control
+        Me.ComboBox_ToggleKey_NormalKey.DisabledForeColor = System.Drawing.SystemColors.GrayText
+        Me.ComboBox_ToggleKey_NormalKey.Enabled = False
+        Me.ComboBox_ToggleKey_NormalKey.FormattingEnabled = True
+        Me.ComboBox_ToggleKey_NormalKey.HighlightBackColor = System.Drawing.SystemColors.Highlight
+        Me.ComboBox_ToggleKey_NormalKey.HighlightForeColor = System.Drawing.SystemColors.HighlightText
+        Me.ComboBox_ToggleKey_NormalKey.Items.AddRange(New Object() {"A", "B", "C", "D", "E", "F", "G", "H", "I", "J", "K", "L", "M", "N", "O", "P", "Q", "R", "S", "T", "U", "V", "W", "X", "Y", "Z", "0", "1", "2", "3", "4", "5", "6", "7", "8", "9", "F1", "F2", "F3", "F4", "F5", "F6", "F7", "F8", "F9", "F10", "F11", "F12"})
+        Me.ComboBox_ToggleKey_NormalKey.Location = New System.Drawing.Point(272, 230)
+        Me.ComboBox_ToggleKey_NormalKey.Name = "ComboBox_ToggleKey_NormalKey"
+        Me.ComboBox_ToggleKey_NormalKey.Size = New System.Drawing.Size(50, 21)
+        Me.ComboBox_ToggleKey_NormalKey.TabIndex = 6
+        '
+        'Numeric_Delay
+        '
+        Me.Numeric_Delay.ArrowColor = System.Drawing.SystemColors.ControlText
+        Me.Numeric_Delay.BorderColor = System.Drawing.SystemColors.ControlDark
+        Me.Numeric_Delay.ButtonBackColor = System.Drawing.SystemColors.Control
+        Me.Numeric_Delay.DisabledForeColor = System.Drawing.SystemColors.GrayText
+        Me.Numeric_Delay.FocusBorderColor = System.Drawing.SystemColors.Highlight
+        Me.Numeric_Delay.Location = New System.Drawing.Point(82, 257)
+        Me.Numeric_Delay.Maximum = New Decimal(New Integer() {2147483, 0, 0, 0})
+        Me.Numeric_Delay.Name = "Numeric_Delay"
+        Me.Numeric_Delay.Size = New System.Drawing.Size(56, 20)
+        Me.Numeric_Delay.TabIndex = 27
         '
         'Main
         '
@@ -490,7 +502,8 @@ Partial Class Main
         Me.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font
         Me.BackColor = System.Drawing.Color.FromArgb(CType(CType(0, Byte), Integer), CType(CType(74, Byte), Integer), CType(CType(121, Byte), Integer))
         Me.BackgroundImageLayout = System.Windows.Forms.ImageLayout.Center
-        Me.ClientSize = New System.Drawing.Size(334, 362)
+        Me.ClientSize = New System.Drawing.Size(334, 390)
+        Me.Controls.Add(Me.ToggleSwitch_DarkTheme)
         Me.Controls.Add(Me.Button_Lock_Unlock)
         Me.Controls.Add(Me.Label_MS)
         Me.Controls.Add(Me.Label_S)
@@ -513,11 +526,11 @@ Partial Class Main
         Me.StartPosition = System.Windows.Forms.FormStartPosition.CenterScreen
         Me.Text = "MouseLock - By ElektroStudios "
         Me.ContextMenuStrip_SysTray.ResumeLayout(False)
+        CType(Me.PictureBox_Logo, System.ComponentModel.ISupportInitialize).EndInit()
         CType(Me.Numeric_Interval, System.ComponentModel.ISupportInitialize).EndInit()
-        CType(Me.Numeric_Delay, System.ComponentModel.ISupportInitialize).EndInit()
         Me.Panel_Lock_Type.ResumeLayout(False)
         Me.Panel_Lock_Type.PerformLayout()
-        CType(Me.PictureBox_Logo, System.ComponentModel.ISupportInitialize).EndInit()
+        CType(Me.Numeric_Delay, System.ComponentModel.ISupportInitialize).EndInit()
         Me.ResumeLayout(False)
         Me.PerformLayout()
 
@@ -525,24 +538,24 @@ Partial Class Main
     Friend WithEvents CheckBox_ToggleKey As System.Windows.Forms.CheckBox
     Friend WithEvents TextBox_Application_Name As System.Windows.Forms.TextBox
     Friend WithEvents Label_Application_Name As System.Windows.Forms.Label
-    Friend WithEvents ComboBox_ToggleKey_SpecialKey As System.Windows.Forms.ComboBox
-    Friend WithEvents ComboBox_ToggleKey_NormalKey As System.Windows.Forms.ComboBox
+    Friend WithEvents ComboBox_ToggleKey_SpecialKey As Global.MouseLock.CustomControls.ThemedComboBox
+    Friend WithEvents ComboBox_ToggleKey_NormalKey As Global.MouseLock.CustomControls.ThemedComboBox
     Friend WithEvents Label2 As System.Windows.Forms.Label
     Friend WithEvents Label_Application_Not_Running As System.Windows.Forms.Label
     Friend WithEvents CheckBox_Remember_settings As System.Windows.Forms.CheckBox
     Friend WithEvents RadioButton_Lock_Application As System.Windows.Forms.RadioButton
     Friend WithEvents RadioButton_Lock_Time As System.Windows.Forms.RadioButton
     Friend WithEvents RadioButton_Lock_Startup As System.Windows.Forms.RadioButton
-    Friend WithEvents ComboBox_Application_Not_Running As System.Windows.Forms.ComboBox
+    Friend WithEvents ComboBox_Application_Not_Running As Global.MouseLock.CustomControls.ThemedComboBox
     Friend WithEvents CheckBox_SysTray As System.Windows.Forms.CheckBox
     Friend WithEvents ContextMenuStrip_SysTray As System.Windows.Forms.ContextMenuStrip
     Friend WithEvents NotifyIcon_SysTray As System.Windows.Forms.NotifyIcon
     Friend WithEvents PictureBox_Logo As System.Windows.Forms.PictureBox
     Friend WithEvents Label_Delay As System.Windows.Forms.Label
     Friend WithEvents Label_Interval As System.Windows.Forms.Label
-    Friend WithEvents Numeric_Interval As System.Windows.Forms.NumericUpDown
-    Friend WithEvents Numeric_Delay As System.Windows.Forms.NumericUpDown
-    Friend WithEvents Panel_Lock_Type As System.Windows.Forms.Panel
+    Friend WithEvents Numeric_Interval As Global.MouseLock.CustomControls.ThemedNumericUpDown
+    Friend WithEvents Numeric_Delay As Global.MouseLock.CustomControls.ThemedNumericUpDown
+    Friend WithEvents Panel_Lock_Type As Global.MouseLock.CustomControls.ThemedBorderPanel
     Friend WithEvents Label_S As System.Windows.Forms.Label
     Friend WithEvents Label_MS As System.Windows.Forms.Label
     Friend WithEvents GTimePicker1 As gTimePickerControl.gTimePicker
@@ -553,5 +566,7 @@ Partial Class Main
     Friend WithEvents Button_Lock_Unlock As CButtonLib.CButton
     Friend WithEvents Button_Running_applications As CButtonLib.CButton
     Friend WithEvents ToolStrip_Exit As System.Windows.Forms.ToolStripMenuItem
+    Friend WithEvents ToggleSwitch_DarkTheme As Global.MouseLock.CustomControls.ThemeToggleSwitch
+    Friend WithEvents ToolTip_Main As System.Windows.Forms.ToolTip
 
 End Class

@@ -1,598 +1,1032 @@
-﻿Public Class Main
+﻿Option Strict On
+Option Explicit On
+Option Infer Off
 
-#Region " Vars "
+#Region " Imports "
 
-    ' INI File
-    Dim INI As String = ".\MouseLock.ini"
+Imports System.ComponentModel
+Imports System.Globalization
+Imports System.IO
 
-    ' Lock is running?
-    Public Running As Boolean = False
-    Public Paused As Boolean = False
-
-    ' Menu options
-    Dim Lock_Sleep As Integer
-    Dim Lock_Interval As Integer
-    Dim Lock_Type As Short
-    Dim Time As String
-    Dim Executable_Names As New List(Of String)
-    Dim IfAppNotRunning As Short
-    Dim Use_ToggleKey As Boolean
-    Dim SysTray As Boolean
-    Dim Remember_Settings As Boolean
-
-    ' Timers
-    Dim Sleep_Timer As New Timer
-    Dim Lock_Timer As New Timer
-    Dim Time_Timer As New Timer
-    Dim Executable_Timer As New Timer
-
-    ' Exe for Lock Type 2
-    Public Current_Executable_Name As String = Nothing
-
-    ' ToggleKey class
-    Dim Toggle_Key As System.Windows.Forms.Keys
-    Dim WithEvents Toggle_Key_Global As Shortcut
-
-    ' Screen positions
-    Dim Screen_Center_X As Short = (Screen.PrimaryScreen.Bounds.Width / 2)
-    Dim Screen_Center_Y As Short = (Screen.PrimaryScreen.Bounds.Height / 2)
-
-    ' FormDocking
-    Public Moving_From_Secondary_Form As Boolean = False
+Imports MouseLock.Core
+Imports MouseLock.Interop
+Imports MouseLock.Theming
 
 #End Region
 
-#Region " Form Load/Close/Resize "
+''' <summary>
+''' The main window of MouseLock.
+''' </summary>
+Public Class Main
 
-    ' Load
-    Private Sub Form1_Load(sender As Object, e As EventArgs) Handles MyBase.Load
+#Region " Constants "
 
-        If IO.File.Exists(".\MouseLock.ini") Then Me.Load_User_settings() Else Me.Load_Default_settings()
+    ''' <summary>
+    ''' The title of the tray icon balloon tips.
+    ''' </summary>
+    Private Const BalloonTitle As String = "MouseLock"
 
-        If Me.SysTray Then
-            Me.WindowState = FormWindowState.Minimized
-            Me.ShowInTaskbar = False
-            Me.ToolStrip_Hide.Enabled = False
-        End If
+    ''' <summary>
+    ''' The time-out of the tray icon balloon tips, in milliseconds.
+    ''' </summary>
+    Private Const BalloonTimeout As Integer = 10
 
-        Me.ToolStrip_Unlock.Enabled = False
+    ''' <summary>
+    ''' The polling interval of the scheduled time and the monitored applications, in milliseconds.
+    ''' </summary>
+    Private Const MonitorInterval As Integer = 1000
 
-        If Me.Lock_Type = 1 Then
-            Me.RadioButton_Lock_Startup.Checked = True
-            Me.ToolStrip_Lock.Enabled = False
-            Me.ToolStrip_Unlock.Enabled = True
-            Me.DoLock_Or_DoUnlock()
-        ElseIf Me.Lock_Type = 2 Then
-            Me.RadioButton_Lock_Time.Checked = True
-        ElseIf Me.Lock_Type = 3 Then
-            Me.RadioButton_Lock_Application.Checked = True
-        End If
+#End Region
 
+#Region " Fields "
+
+    ''' <summary>The full path of the settings file.</summary>
+    Private ReadOnly settingsFilePath As String
+
+    ''' <summary>The state machine of the mouse lock.</summary>
+    Private ReadOnly lockSession As New LockSession()
+
+    ''' <summary>Timer that elapses when the initial delay ends.</summary>
+    Private WithEvents DelayTimer As New Timer()
+
+    ''' <summary>Timer that keeps the mouse pointer at the center of the screen.</summary>
+    Private WithEvents LockTimer As New Timer()
+
+    ''' <summary>Timer that polls the scheduled lock time.</summary>
+    Private WithEvents ScheduleTimer As New Timer() With {.Interval = Main.MonitorInterval}
+
+    ''' <summary>Timer that polls the monitored applications.</summary>
+    Private WithEvents ProcessMonitorTimer As New Timer() With {.Interval = Main.MonitorInterval}
+
+    ''' <summary>The trigger of the daily scheduled lock, or <see langword="Nothing"/> when the time is not valid.</summary>
+    Private scheduledTrigger As ScheduledTimeTrigger
+
+    ''' <summary>The name of the monitored process that is currently running, if any.</summary>
+    Private runningMonitoredProcess As String
+
+    ''' <summary>The registered global hot key that pauses and resumes the lock, if any.</summary>
+    Private WithEvents ToggleHotkey As GlobalHotkey
+
+    ''' <summary>The floating window that lists the running applications, if it is open.</summary>
+    Private runningApplicationsWindow As Running_Applications
+
+    ''' <summary>The current lock trigger selected with the radio buttons.</summary>
+    Private selectedLockTrigger As LockTrigger = LockTrigger.None
+
+    ''' <summary>The logo recolored for the current theme.</summary>
+    Private themedLogo As Bitmap
+
+    ''' <summary>Flag that suppresses UI event handlers while the settings are being applied.</summary>
+    Private isApplyingSettings As Boolean
+
+    ''' <summary>Flag that suppresses the theme switch handler while the theme is being applied.</summary>
+    Private isApplyingTheme As Boolean
+
+    ''' <summary>Flag that indicates that this window is being moved by the floating window, to avoid feedback loops.</summary>
+    Private isMovingFromSecondaryForm As Boolean
+
+    ''' <summary>Flag that indicates that the window must be hidden in the tray as soon as it is shown ("Minimize at startup").</summary>
+    Private hideOnShown As Boolean
+
+#End Region
+
+#Region " Properties "
+
+    ''' <summary>
+    ''' Gets or sets the semicolon-separated list of application names to monitor.
+    ''' </summary>
+    Friend Property ApplicationListText As String
+        Get
+            Return Me.TextBox_Application_Name.Text
+        End Get
+        Set(value As String)
+            Me.TextBox_Application_Name.Text = value
+        End Set
+    End Property
+
+#End Region
+
+#Region " Constructors "
+
+    ''' <summary>
+    ''' Initializes a new instance of the <see cref="Main"/> class.
+    ''' </summary>
+    Public Sub New()
+
+        Me.InitializeComponent()
+
+        Me.Numeric_Delay.Minimum = UserSettings.MinInitialDelaySeconds
+        Me.Numeric_Delay.Maximum = UserSettings.MaxInitialDelaySeconds
+        Me.Numeric_Interval.Minimum = UserSettings.MinLockIntervalMilliseconds
+        Me.Numeric_Interval.Maximum = UserSettings.MaxLockIntervalMilliseconds
+
+        ' The supported hot key names come from the parser, so the UI and the parser can never disagree.
+        Main.SetItems(Me.ComboBox_ToggleKey_SpecialKey, ToggleKeyParser.ModifierNames)
+        Main.SetItems(Me.ComboBox_ToggleKey_NormalKey, ToggleKeyParser.KeyNames)
+
+        Me.settingsFilePath = SettingsFileLocator.ResolveForCurrentApplication()
+
+        AddHandler Me.lockSession.StateChanged, AddressOf Me.LockSession_StateChanged
+        AddHandler AppThemeService.ThemeChanged, AddressOf Me.AppThemeService_ThemeChanged
     End Sub
 
-    ' Close
-    Private Sub Form1_FormClosing(sender As Object, e As FormClosingEventArgs) Handles MyBase.FormClosing
+#End Region
+
+#Region " Form Events "
+
+    ''' <summary>
+    ''' Applies the dark title bar as soon as the native window exists. This must be done here and not in
+    ''' <see cref="Form.Load"/>, where it has no effect; it also runs again whenever the handle is recreated
+    ''' (e.g. when <see cref="Form.ShowInTaskbar"/> changes).
+    ''' </summary>
+    ''' <param name="e">The event data.</param>
+    Protected Overrides Sub OnHandleCreated(e As EventArgs)
+        MyBase.OnHandleCreated(e)
+        DwmTitleBar.SetDarkMode(Me, AppThemeService.Current = AppTheme.Dark)
+    End Sub
+
+    ''' <summary>
+    ''' Handles the <see cref="Form.Load"/> event of the form.
+    ''' </summary>
+    Private Sub Main_Load(sender As Object, e As EventArgs) Handles MyBase.Load
+
+        Me.Text = $"{My.Application.Info.Title} v{My.Application.Info.Version.ToString(3)}"
+
+        Me.ApplyTheme()
+
+        Dim settings As UserSettings = Me.LoadSettingsOrDefault()
+        Me.ApplySettings(settings)
+        Me.RegisterToggleHotkey(showErrors:=True)
+        Me.UpdateLockUi()
+
+        If settings.MinimizeAtStartup Then
+            ' Fully transparent until it is hidden in Shown; hiding it from Load does not work,
+            ' because WinForms shows the window right after the Load event.
+            Me.hideOnShown = True
+            Me.Opacity = 0
+        End If
+
+        If Me.selectedLockTrigger = LockTrigger.Startup Then
+            Me.StartLock()
+        End If
+    End Sub
+
+    ''' <summary>
+    ''' Handles the <see cref="Form.Shown"/> event of the form.
+    ''' </summary>
+    Private Sub Main_Shown(sender As Object, e As EventArgs) Handles MyBase.Shown
+
+        If Me.hideOnShown Then
+            Me.hideOnShown = False
+            Me.Hide()
+            Me.Opacity = 1
+            Me.UpdateTrayMenu()
+        End If
+    End Sub
+
+    ''' <summary>
+    ''' Handles the <see cref="Form.FormClosing"/> event of the form.
+    ''' </summary>
+    Private Sub Main_FormClosing(sender As Object, e As FormClosingEventArgs) Handles MyBase.FormClosing
+        Me.SaveOrDeleteSettings()
+    End Sub
+
+    ''' <summary>
+    ''' Handles the <see cref="Form.FormClosed"/> event of the form.
+    ''' </summary>
+    Private Sub Main_FormClosed(sender As Object, e As FormClosedEventArgs) Handles MyBase.FormClosed
+
+        RemoveHandler AppThemeService.ThemeChanged, AddressOf Me.AppThemeService_ThemeChanged
+
+        Me.DelayTimer.Stop()
+        Me.LockTimer.Stop()
+        Me.ScheduleTimer.Stop()
+        Me.ProcessMonitorTimer.Stop()
+        Me.DelayTimer.Dispose()
+        Me.LockTimer.Dispose()
+        Me.ScheduleTimer.Dispose()
+        Me.ProcessMonitorTimer.Dispose()
+        Me.UnregisterToggleHotkey()
+        Me.themedLogo?.Dispose()
+
         Me.NotifyIcon_SysTray.Visible = False
         Me.NotifyIcon_SysTray.Dispose()
-        If Me.Remember_Settings Then Me.Save_Settings()
     End Sub
 
-    ' Move
-    Private Sub Form1_Move(ByVal sender As Object, ByVal e As System.EventArgs) Handles MyBase.Move
-        If Not Me.Moving_From_Secondary_Form Then Running_Applications.Location = New Point(Me.Right, Me.Top)
-    End Sub
+    ''' <summary>
+    ''' Handles the <see cref="Control.Move"/> event of the form, to keep the floating window docked at the right.
+    ''' </summary>
+    Private Sub Main_Move(sender As Object, e As EventArgs) Handles MyBase.Move
 
-    ' Minimize
-    Public Sub Form1_Resize(ByVal sender As Object, ByVal e As System.EventArgs) Handles Me.Resize
-        If Me.WindowState = FormWindowState.Minimized Then
-            If Running_Applications.Visible Then Running_Applications.Close()
-            Me.Hide()
-            Me.ToolStrip_Hide.Enabled = False
-            Me.ToolStrip_Restore.Enabled = True
-            Me.ShowInTaskbar = False
-        Else
-            Me.ToolStrip_Restore.Enabled = False
-            Me.ToolStrip_Hide.Enabled = True
-            Me.ShowInTaskbar = True
+        If Not Me.isMovingFromSecondaryForm AndAlso Me.IsRunningApplicationsWindowOpen() Then
+            Me.runningApplicationsWindow.Location = New Point(Me.Right, Me.Top)
         End If
+    End Sub
+
+    ''' <summary>
+    ''' Handles the <see cref="Control.Resize"/> event of the form, to hide it in the tray when minimized.
+    ''' </summary>
+    Private Sub Main_Resize(sender As Object, e As EventArgs) Handles MyBase.Resize
+
+        If Me.WindowState = FormWindowState.Minimized Then
+            Me.CloseRunningApplicationsWindow()
+            Me.Hide()
+        End If
+        Me.UpdateTrayMenu()
     End Sub
 
 #End Region
 
-#Region " Controls "
+#Region " Control Events "
 
-    ' Numeric Delay
-    Private Sub Numeric_Delay_ValueChanged(sender As Object, e As EventArgs) Handles Numeric_Delay.ValueChanged
-        Me.Lock_Sleep = Me.Get_Milliseconds(sender.value)
-    End Sub
-
-    ' Numeric Interval
-    Private Sub Numeric_Interval_ValueChanged(sender As Object, e As EventArgs) Handles Numeric_Interval.ValueChanged
-        Me.Lock_Interval = sender.value
-    End Sub
-
-    ' ComboBoxes ToggleKey
-    Private Sub ComboBox_ToggleKey_SpecialKey_SelectedIndexChanged(sender As Object, e As EventArgs) Handles _
-        ComboBox_ToggleKey_SpecialKey.SelectedIndexChanged,
-        ComboBox_ToggleKey_NormalKey.SelectedIndexChanged
-
-        Try : Select Case Me.ComboBox_ToggleKey_SpecialKey.Text
-                Case "ALT"
-                    Me.Toggle_Key = [Enum].Parse(GetType(System.Windows.Forms.Keys), Me.ComboBox_ToggleKey_NormalKey.Text, True)
-                    Me.Toggle_Key_Global = Shortcut.Create(Shortcut.Modifier.Alt, Me.Toggle_Key)
-                Case "CTRL"
-                    Me.Toggle_Key = [Enum].Parse(GetType(System.Windows.Forms.Keys), Me.ComboBox_ToggleKey_NormalKey.Text, True)
-                    Me.Toggle_Key_Global = Shortcut.Create(Shortcut.Modifier.Ctrl, Me.Toggle_Key)
-                Case "SHIFT"
-                    Me.Toggle_Key = [Enum].Parse(GetType(System.Windows.Forms.Keys), Me.ComboBox_ToggleKey_NormalKey.Text, True)
-                    Me.Toggle_Key_Global = Shortcut.Create(Shortcut.Modifier.Shift, Me.Toggle_Key)
-                Case "NONE"
-                    Me.Toggle_Key = If(Not Me.String_Is_Numeric(Me.ComboBox_ToggleKey_NormalKey.Text),
-                        DirectCast([Enum].Parse(GetType(System.Windows.Forms.Keys), Me.ComboBox_ToggleKey_NormalKey.Text, True), Keys),
-                        DirectCast([Enum].Parse(GetType(System.Windows.Forms.Keys), (Me.ComboBox_ToggleKey_NormalKey.Text + 96), False), Keys))
-                    Me.Toggle_Key_Global = Shortcut.Create(Shortcut.Modifier.None, Me.Toggle_Key)
-
-            End Select
-        Catch : End Try
-
-    End Sub
-
-    ' Radio Buttons
-    Private Sub RadioButtons_CheckedChanged(sender As Object, e As EventArgs) Handles _
+    ''' <summary>
+    ''' Handles the <see cref="RadioButton.CheckedChanged"/> event of the lock type radio buttons.
+    ''' </summary>
+    Private Sub RadioButtons_LockType_CheckedChanged(sender As Object, e As EventArgs) Handles _
         RadioButton_Lock_Startup.CheckedChanged,
         RadioButton_Lock_Time.CheckedChanged,
         RadioButton_Lock_Application.CheckedChanged
 
-        Me.Lock_Type = sender.tag
-
-        If Me.Lock_Type = 2 Then
-            Me.Enable_Control(Me.GTimePicker1)
-            Me.Monitor_Time()
-        ElseIf Not Me.Lock_Type = 2 Then
-            Me.Time_Timer.Stop()
-            Me.Disable_Control(Me.GTimePicker1)
+        Dim radioButton As RadioButton = DirectCast(sender, RadioButton)
+        If Not radioButton.Checked Then
+            Return
         End If
 
-        If Me.Lock_Type = 3 Then
-            Me.Enable_Control(Me.Button_Running_applications)
-            Me.Enable_Control(Me.Label_Application_Name)
-            Me.Enable_Control(Me.Label_Application_Not_Running)
-            Me.Enable_Control(Me.ComboBox_Application_Not_Running)
-            Me.Enable_Control(Me.TextBox_Application_Name)
-            Me.Monitor_Executables()
-        ElseIf Not Me.Lock_Type = 3 Then
-
-            Me.Disable_Control(Me.Button_Running_applications)
-            Me.Disable_Control(Me.Label_Application_Name)
-            Me.Disable_Control(Me.Label_Application_Not_Running)
-            Me.Disable_Control(Me.ComboBox_Application_Not_Running)
-            Me.Disable_Control(Me.TextBox_Application_Name)
-            Me.Executable_Timer.Stop()
-        End If
-
+        Me.selectedLockTrigger = Main.GetLockTrigger(radioButton)
+        Me.UpdateLockTriggerUi()
     End Sub
 
-    ' Button Running applications
-    Private Sub Button_Running_applications_Click(sender As Object, e As EventArgs) Handles Button_Running_applications.ClickButtonArea
-        Running_Applications.Show()
-    End Sub
-
-
-
-
-#Region " Animate Window "
-
-    ' [ Animate Window ]
-    '
-    ' // By ElektroStudios
-    '
-    ' Examples :
-    ' AnimateWindow(Me.Handle, 1500, Animation.Show_Fade)
-    ' AnimateWindow(Me.Handle, 1500, Animation.Hide_Center)
-
-    Public Declare Function AnimateWindow Lib "user32" (ByVal hwnd As IntPtr, ByVal dwtime As Long, ByVal dwflags As Animation) As Boolean
-
-    Public Enum Animation As Integer
-
-        Show_Left_To_Right = 1
-        Show_Right_To_left = 2
-        Show_Top_To_Bottom = 4
-        Show_Bottom_to_top = 8
-        Show_Corner_Left_UP = 5
-        Show_Corner_Left_Down = 9
-        Show_Corner_Right_UP = 6
-        Show_Corner_Right_Down = 10
-        Show_Center = 16
-        Show_Fade = 524288
-
-        Hide_Left_To_Right = 1 Or 65536
-        Hide_Right_To_left = 2 Or 65536
-        Hide_Top_To_Bottom = 4 Or 65536
-        Hide_Bottom_to_top = 8 Or 65536
-        Hide_Corner_Left_UP = 5 Or 65536
-        Hide_Corner_Left_Down = 9 Or 65536
-        Hide_Corner_Right_UP = 6 Or 65536
-        Hide_Corner_Right_Down = 10 Or 65536
-        Hide_Center = 16 Or 65536
-        Hide_Fade = 524288 Or 65536
-
-    End Enum
-
-#End Region
-
-
-
-
-
-    ' ComboBox If APP is not running...
-    Private Sub ComboBox_Application_Not_Running_SelectedIndexChanged(sender As Object, e As EventArgs) Handles ComboBox_Application_Not_Running.SelectedIndexChanged
-        Me.IfAppNotRunning = sender.selectedindex + 1
-    End Sub
-
-    ' GTimer picker
+    ''' <summary>
+    ''' Handles the <see cref="gTimePickerControl.gTimePicker.TimePicked"/> event of the time picker.
+    ''' </summary>
     Private Sub GTimePicker1_TimePicked(sender As Object) Handles GTimePicker1.TimePicked
-        Me.Time = sender.time
+        Me.UpdateScheduledTrigger()
     End Sub
 
-    ' CheckBox ToggleKey
-    Private Sub CheckBox_ToggleKey_CheckedChanged(sender As Object, e As EventArgs) Handles CheckBox_ToggleKey.CheckedChanged
-        If sender.checked Then
-            Me.Enable_Control(Me.ComboBox_ToggleKey_NormalKey)
-            Me.Enable_Control(Me.ComboBox_ToggleKey_SpecialKey)
-        Else
-            Me.Disable_Control(Me.ComboBox_ToggleKey_NormalKey)
-            Me.Disable_Control(Me.ComboBox_ToggleKey_SpecialKey)
-        End If
-    End Sub
-
-    ' CheckBox SysTray
-    Private Sub CheckBox_SysTray_CheckedChanged(sender As Object, e As EventArgs) Handles CheckBox_SysTray.CheckedChanged
-        If sender.checked Then Me.SysTray = True Else Me.SysTray = False
-    End Sub
-
-    ' CheckBox Remember settings
-    Private Sub CheckBox_Remember_settings_CheckedChanged(sender As Object, e As EventArgs) Handles CheckBox_Remember_settings.CheckedChanged
-        If sender.checked Then Me.Remember_Settings = True : Me.Save_Settings()
-    End Sub
-
-    ' Textbox app names
+    ''' <summary>
+    ''' Handles the <see cref="Control.TextChanged"/> event of the application names text box.
+    ''' </summary>
     Private Sub TextBox_Application_Name_TextChanged(sender As Object, e As EventArgs) Handles TextBox_Application_Name.TextChanged
-        Me.Executable_Names.Clear()
-        Try
-            For Each token In sender.text.split(";") : Me.Executable_Names.Add(token) : Next
-        Catch
-            sender.text += ";"
-        End Try
-        sender.Text = sender.Text.Replace(";;", ";")
 
-        If Me.Lock_Type = 3 Then Me.Monitor_Executables()
+        ' The monitored process may have been removed from the list.
+        If Me.runningMonitoredProcess IsNot Nothing AndAlso
+           Not ProcessNameList.GetProcessNames(Me.TextBox_Application_Name.Text).Contains(Me.runningMonitoredProcess, StringComparer.OrdinalIgnoreCase) Then
+            Me.runningMonitoredProcess = Nothing
+        End If
     End Sub
 
-    ' Button Lock/Unlock
-    Private Sub Button_Lock_Unlock_Click(sender As Object, e As EventArgs) Handles Button_Lock_Unlock.ClickButtonArea
-        Me.DoLock_Or_DoUnlock()
+    ''' <summary>
+    ''' Handles the <see cref="CButtonLib.CButton.ClickButtonArea"/> event of the running applications button.
+    ''' </summary>
+    Private Sub Button_Running_applications_ClickButtonArea(sender As Object, e As MouseEventArgs) Handles Button_Running_applications.ClickButtonArea
+
+        If Me.IsRunningApplicationsWindowOpen() Then
+            Me.runningApplicationsWindow.Activate()
+            Return
+        End If
+
+        Me.runningApplicationsWindow = New Running_Applications(Me)
+        Me.runningApplicationsWindow.Show(Me)
+    End Sub
+
+    ''' <summary>
+    ''' Handles the <see cref="CheckBox.CheckedChanged"/> event of the toggle hot key check box.
+    ''' </summary>
+    Private Sub CheckBox_ToggleKey_CheckedChanged(sender As Object, e As EventArgs) Handles CheckBox_ToggleKey.CheckedChanged
+
+        Me.UpdateLockUi()
+        If Not Me.isApplyingSettings Then
+            Me.RegisterToggleHotkey(showErrors:=True)
+        End If
+    End Sub
+
+    ''' <summary>
+    ''' Handles the <see cref="ComboBox.SelectedIndexChanged"/> event of the toggle hot key combo boxes.
+    ''' </summary>
+    Private Sub ComboBoxes_ToggleKey_SelectedIndexChanged(sender As Object, e As EventArgs) Handles _
+        ComboBox_ToggleKey_SpecialKey.SelectedIndexChanged,
+        ComboBox_ToggleKey_NormalKey.SelectedIndexChanged
+
+        If Not Me.isApplyingSettings Then
+            Me.RegisterToggleHotkey(showErrors:=True)
+        End If
+    End Sub
+
+    ''' <summary>
+    ''' Handles the <see cref="NumericUpDown.ValueChanged"/> event of the lock interval.
+    ''' </summary>
+    Private Sub Numeric_Interval_ValueChanged(sender As Object, e As EventArgs) Handles Numeric_Interval.ValueChanged
+        ' Applies immediately, also while locked.
+        Me.LockTimer.Interval = CInt(Me.Numeric_Interval.Value)
+    End Sub
+
+    ''' <summary>
+    ''' Handles the <see cref="CheckBox.CheckedChanged"/> event of the "Remember settings" check box.
+    ''' </summary>
+    Private Sub CheckBox_Remember_settings_CheckedChanged(sender As Object, e As EventArgs) Handles CheckBox_Remember_settings.CheckedChanged
+
+        If Not Me.isApplyingSettings AndAlso Me.CheckBox_Remember_settings.Checked Then
+            Me.TrySaveSettings()
+        End If
+    End Sub
+
+    ''' <summary>
+    ''' Handles the <see cref="CButtonLib.CButton.ClickButtonArea"/> event of the lock/unlock button.
+    ''' </summary>
+    Private Sub Button_Lock_Unlock_ClickButtonArea(sender As Object, e As MouseEventArgs) Handles Button_Lock_Unlock.ClickButtonArea
+        Me.ToggleLock()
+    End Sub
+
+    ''' <summary>
+    ''' Handles the <see cref="CustomControls.ThemeToggleSwitch.CheckedChanged"/> event of the dark theme switch.
+    ''' </summary>
+    Private Sub ToggleSwitch_DarkTheme_CheckedChanged(sender As Object, e As EventArgs) Handles ToggleSwitch_DarkTheme.CheckedChanged
+
+        If Not Me.isApplyingTheme Then
+            AppThemeService.SetTheme(If(Me.ToggleSwitch_DarkTheme.Checked, AppTheme.Dark, AppTheme.Light))
+        End If
+    End Sub
+
+    ''' <summary>
+    ''' Handles the <see cref="ToolTip.Draw"/> event of the tool tip, to paint it with the theme colors.
+    ''' </summary>
+    Private Sub ToolTip_Main_Draw(sender As Object, e As DrawToolTipEventArgs) Handles ToolTip_Main.Draw
+
+        Dim palette As ThemePalette = AppThemeService.CurrentPalette
+        Dim backColor As Color = If(palette.IsDark, palette.InputBackground, SystemColors.Info)
+        Dim foreColor As Color = If(palette.IsDark, palette.InputForeground, SystemColors.InfoText)
+
+        Using fill As New SolidBrush(backColor)
+            e.Graphics.FillRectangle(fill, e.Bounds)
+        End Using
+        Using pen As New Pen(palette.Border)
+            e.Graphics.DrawRectangle(pen, e.Bounds.Left, e.Bounds.Top, e.Bounds.Width - 1, e.Bounds.Height - 1)
+        End Using
+        TextRenderer.DrawText(e.Graphics, e.ToolTipText, e.Font, e.Bounds, foreColor,
+                              TextFormatFlags.HorizontalCenter Or TextFormatFlags.VerticalCenter Or TextFormatFlags.NoPrefix)
     End Sub
 
 #End Region
 
-#Region " SysTray "
+#Region " Tray Icon Events "
 
-    ' NotityIcon [ Double-Click ]
-    Private Sub NotifyIcon1_MouseDoubleClick(sender As Object, e As MouseEventArgs) Handles NotifyIcon_SysTray.MouseDoubleClick
-        If Me.Visible = True And Not Me.ShowInTaskbar = False Then
-            Me.Hide()
-            Running_Applications.Close()
-            Me.ToolStrip_Hide.Enabled = False
-            Me.ToolStrip_Restore.Enabled = True
-        ElseIf Me.Visible = False OrElse Me.ShowInTaskbar = False Then
-            Me.Show()
-            Me.WindowState = FormWindowState.Normal
-            Me.ToolStrip_Hide.Enabled = True
-            Me.ToolStrip_Restore.Enabled = False
-            Me.ShowInTaskbar = True
+    ''' <summary>
+    ''' Handles the <see cref="NotifyIcon.MouseDoubleClick"/> event of the tray icon.
+    ''' </summary>
+    Private Sub NotifyIcon_SysTray_MouseDoubleClick(sender As Object, e As MouseEventArgs) Handles NotifyIcon_SysTray.MouseDoubleClick
+
+        If e.Button = MouseButtons.Left Then
+            Me.ToggleWindowVisibility()
         End If
     End Sub
 
-    ' ToolStrip [ Restore Or Hide ]
-    Private Sub NotifyIcon_Restore_Or_Hide(sender As Object, e As EventArgs) Handles _
-    ToolStrip_Hide.Click,
-    ToolStrip_Restore.Click
+    ''' <summary>
+    ''' Handles the <see cref="ToolStripItem.Click"/> event of the "Restore" and "Hide" tray menu items.
+    ''' </summary>
+    Private Sub ToolStrip_Restore_Or_Hide_Click(sender As Object, e As EventArgs) Handles _
+        ToolStrip_Hide.Click,
+        ToolStrip_Restore.Click
 
-        If Me.Visible = True And Not Me.ShowInTaskbar = False Then
-            Me.Hide()
-            Running_Applications.Close()
-            Me.ToolStrip_Hide.Enabled = False
-            Me.ToolStrip_Restore.Enabled = True
-        ElseIf Me.Visible = False OrElse Me.ShowInTaskbar = False Then
-            Me.Show()
-            Me.WindowState = FormWindowState.Normal
-            Me.ShowInTaskbar = True
-            Me.ToolStrip_Hide.Enabled = True
-            Me.ToolStrip_Restore.Enabled = False
-        End If
-
+        Me.ToggleWindowVisibility()
     End Sub
 
-    ' ToolStrip [ Lock Unlock ]
-    Private Sub ToolStrip_Lock_Unlock_Click(sender As Object, e As EventArgs) Handles _
-        ToolStrip_Lock.Click,
-        ToolStrip_Unlock.Click
+    ''' <summary>
+    ''' Handles the <see cref="ToolStripItem.Click"/> event of the "Lock" tray menu item.
+    ''' </summary>
+    Private Sub ToolStrip_Lock_Click(sender As Object, e As EventArgs) Handles ToolStrip_Lock.Click
 
-        If sender.name = "ToolStrip_Lock" Then
-            Me.DoLock_Or_DoUnlock()
-            Me.ToolStrip_Lock.Enabled = False
-            Me.ToolStrip_Unlock.Enabled = True
-        Else
-            Me.DoLock_Or_DoUnlock()
-            Me.ToolStrip_Lock.Enabled = True
-            Me.ToolStrip_Unlock.Enabled = False
+        If Not Me.lockSession.IsActive Then
+            Me.StartLock()
         End If
-
     End Sub
 
-    ' ToolStrip [ Exit ]
+    ''' <summary>
+    ''' Handles the <see cref="ToolStripItem.Click"/> event of the "Unlock" tray menu item.
+    ''' </summary>
+    Private Sub ToolStrip_Unlock_Click(sender As Object, e As EventArgs) Handles ToolStrip_Unlock.Click
+
+        If Me.lockSession.IsActive Then
+            Me.StopLock()
+        End If
+    End Sub
+
+    ''' <summary>
+    ''' Handles the <see cref="ToolStripItem.Click"/> event of the "Close" tray menu item.
+    ''' </summary>
     Private Sub ToolStrip_Exit_Click(sender As Object, e As EventArgs) Handles ToolStrip_Exit.Click
-        Application.Exit()
+        Me.Close()
     End Sub
 
 #End Region
 
-#Region " Misc Functions/Methods "
+#Region " Timer And Hot Key Events "
 
-    ' Save Settings
-    Private Sub Save_Settings()
-        Me.Write_Text_To_File(Me.INI, "Delay=" & Me.Numeric_Delay.Value & vbNewLine, False)
-        Me.Write_Text_To_File(Me.INI, "Interval=" & Me.Numeric_Interval.Value & vbNewLine, True)
-        Me.Write_Text_To_File(Me.INI, "LockType=" & Me.Lock_Type & vbNewLine, True)
-        Me.Write_Text_To_File(Me.INI, "Time=" & Me.GTimePicker1.Time & vbNewLine, True)
-        Me.Write_Text_To_File(Me.INI, "APPS=" & Me.TextBox_Application_Name.Text & vbNewLine, True)
-        Me.Write_Text_To_File(Me.INI, "IfAPPNotRunning=" & Me.ComboBox_Application_Not_Running.SelectedIndex + 1 & vbNewLine, True)
-        Me.Write_Text_To_File(Me.INI, "UseToggleKey=" & Me.CheckBox_ToggleKey.Checked & vbNewLine, True)
-        Me.Write_Text_To_File(Me.INI, "SpecialKey=" & Me.ComboBox_ToggleKey_SpecialKey.Text & vbNewLine, True)
-        Me.Write_Text_To_File(Me.INI, "NormalKey=" & Me.ComboBox_ToggleKey_NormalKey.Text & vbNewLine, True)
-        Me.Write_Text_To_File(Me.INI, "SysTray=" & Me.CheckBox_SysTray.Checked & vbNewLine, True)
-        Me.Write_Text_To_File(Me.INI, "RememberSettings=" & Me.CheckBox_Remember_settings.Checked, True)
+    ''' <summary>
+    ''' Handles the <see cref="Timer.Tick"/> event of the initial delay timer.
+    ''' </summary>
+    Private Sub DelayTimer_Tick(sender As Object, e As EventArgs) Handles DelayTimer.Tick
+
+        Me.DelayTimer.Stop()
+        If Me.lockSession.CompleteDelay() Then
+            Me.BeginConfiningCursor()
+        End If
     End Sub
 
-    ' Load default settings
-    Private Sub Load_Default_settings()
-        Me.Numeric_Delay.Value = 0
-        Me.Numeric_Interval.Value = 10
-        Me.ComboBox_Application_Not_Running.SelectedIndex = 0
-        Me.CheckBox_ToggleKey.Checked = True
-        Me.ComboBox_ToggleKey_SpecialKey.SelectedIndex = 0
-        Me.ComboBox_ToggleKey_NormalKey.SelectedIndex = 36
+    ''' <summary>
+    ''' Handles the <see cref="Timer.Tick"/> event of the lock timer.
+    ''' </summary>
+    Private Sub LockTimer_Tick(sender As Object, e As EventArgs) Handles LockTimer.Tick
+
+        If Me.lockSession.ShouldConfineCursor Then
+            ' Computed on every tick, so a change of the screen resolution is honored.
+            Dim bounds As Rectangle = Screen.PrimaryScreen.Bounds
+            Cursor.Position = New Point(bounds.Left + (bounds.Width \ 2), bounds.Top + (bounds.Height \ 2))
+        End If
     End Sub
 
-    ' Load user settings
-    Private Sub Load_User_settings()
-        Dim xRead As IO.StreamReader
-        xRead = IO.File.OpenText(Me.INI)
-        Do Until xRead.EndOfStream
+    ''' <summary>
+    ''' Handles the <see cref="Timer.Tick"/> event of the schedule timer.
+    ''' </summary>
+    Private Sub ScheduleTimer_Tick(sender As Object, e As EventArgs) Handles ScheduleTimer.Tick
 
-            Dim Line = xRead.ReadLine().ToLower
+        If Me.scheduledTrigger Is Nothing OrElse Not Me.scheduledTrigger.ShouldFire(Date.Now) Then
+            Return
+        End If
 
-            If Line.StartsWith("delay=") Then Me.Numeric_Delay.Value = Line.Replace("delay=", "")
-            If Line.StartsWith("interval=") Then Me.Numeric_Interval.Value = Line.Replace("interval=", "")
-            If Line.StartsWith("locktype=") Then Me.Lock_Type = Line.Replace("locktype=", "")
-            If Line.StartsWith("time=") Then Me.GTimePicker1.Time = Line.Replace("time=", "")
-            If Line.StartsWith("apps=") Then Me.TextBox_Application_Name.Text = Line.Replace("apps=", "")
-            If Line.StartsWith("ifappnotrunning=") Then Me.ComboBox_Application_Not_Running.SelectedIndex = Line.Replace("ifappnotrunning=", "") - 1
-            If Line.StartsWith("usetogglekey=") Then Me.CheckBox_ToggleKey.Checked = Line.Replace("usetogglekey=", "")
-            If Line.StartsWith("specialkey=") Then Me.ComboBox_ToggleKey_SpecialKey.Text = Line.Replace("specialkey=", "")
-            If Line.StartsWith("normalkey=") Then Me.ComboBox_ToggleKey_NormalKey.Text = Line.Replace("normalkey=", "")
-            If Line.StartsWith("systray=") Then Me.CheckBox_SysTray.Checked = Line.Replace("systray=", "")
-            If Line.StartsWith("remembersettings=") Then Me.CheckBox_Remember_settings.Checked = Line.Replace("remembersettings=", "")
-
-        Loop
-
-        xRead.Close()
-        xRead.Dispose()
-
+        ' Never toggle (unlock) an already active lock.
+        If Not Me.lockSession.IsActive Then
+            Me.StartLock()
+        End If
     End Sub
 
-    ' Write Text To File
-    Public Sub Write_Text_To_File(ByVal Text_File As String, ByVal Text As String, ByVal Append_Text As Boolean)
-        Try : My.Computer.FileSystem.WriteAllText(Text_File, Text, Append_Text)
-        Catch : End Try
+    ''' <summary>
+    ''' Handles the <see cref="Timer.Tick"/> event of the process monitor timer.
+    ''' </summary>
+    Private Sub ProcessMonitorTimer_Tick(sender As Object, e As EventArgs) Handles ProcessMonitorTimer.Tick
+
+        If Me.runningMonitoredProcess Is Nothing Then
+            For Each processName As String In ProcessNameList.GetProcessNames(Me.TextBox_Application_Name.Text)
+                If Main.IsProcessRunning(processName) Then
+                    Me.runningMonitoredProcess = processName
+                    If Not Me.lockSession.IsActive Then
+                        Me.StartLock()
+                    End If
+                    Exit For
+                End If
+            Next
+
+        ElseIf Not Main.IsProcessRunning(Me.runningMonitoredProcess) Then
+            Me.runningMonitoredProcess = Nothing
+            Me.OnMonitoredApplicationExited()
+        End If
     End Sub
 
-    ' Get Milliseconds
-    Private Function Get_Milliseconds(ByVal Seconds As Integer) As Integer
-        Dim Time_Span As New TimeSpan(TimeSpan.TicksPerSecond * Seconds)
-        Return Time_Span.TotalMilliseconds
-    End Function
+    ''' <summary>
+    ''' Handles the <see cref="GlobalHotkey.Pressed"/> event of the toggle hot key.
+    ''' </summary>
+    Private Sub ToggleHotkey_Pressed(sender As Object, e As EventArgs) Handles ToggleHotkey.Pressed
 
-    ' String Is Numeric
-    Private Function String_Is_Numeric(ByVal Value As String) As Boolean
-        Dim Number_RegEx As New System.Text.RegularExpressions.Regex("\D")
-        If Number_RegEx.IsMatch(Value) Then Return False Else Return True
-    End Function
+        If Not Me.lockSession.TogglePause() Then
+            Return
+        End If
 
-    ' Process Is Running
-    Private Function Process_Is_Running(ByVal Process_Name As String) As Boolean
-        Dim myProcess As Process() = Process.GetProcessesByName(Process_Name)
-        If Not myProcess.Length = 0 Then Return True Else Return False
-    End Function
-
-    ' Enable Control
-    Private Sub Enable_Control(ByVal Control As Control)
-        Try
-            If Not Control.Enabled Then Control.Enabled = True
-        Catch ex As Exception
-            Throw New Exception(ex.Message)
-        End Try
+        Me.ShowBalloon(If(Me.lockSession.State = LockState.Paused, "MouseLock paused...", "MouseLock resumed..."))
     End Sub
 
-    ' Disable Control
-    Private Sub Disable_Control(ByVal Control As Control)
-        Try
-            If Control.Enabled Then Control.Enabled = False
-        Catch ex As Exception
-            Throw New Exception(ex.Message)
-        End Try
+    ''' <summary>
+    ''' Handles the <see cref="LockSession.StateChanged"/> event.
+    ''' </summary>
+    Private Sub LockSession_StateChanged(sender As Object, e As EventArgs)
+        Me.UpdateLockUi()
     End Sub
 
-    ' Change Cbutton Color
-    Private Sub Change_Cbutton_Color(ByVal Button_Name As CButtonLib.CButton,
-                                  ByVal Color1 As Color,
-                                  ByVal Color2 As Color,
-                                  ByVal Color3 As Color)
-
-        Button_Name.ColorFillBlend.iColor(0) = Color1
-        Button_Name.ColorFillBlend.iColor(1) = Color2
-        Button_Name.ColorFillBlend.iColor(2) = Color3
-        Button_Name.UpdateDimBlends()
-
+    ''' <summary>
+    ''' Handles the <see cref="AppThemeService.ThemeChanged"/> event.
+    ''' </summary>
+    Private Sub AppThemeService_ThemeChanged(sender As Object, e As EventArgs)
+        Me.ApplyTheme()
     End Sub
 
-    ' Sleep
-    Private Sub Sleep()
-        Me.Sleep_Timer.Interval = Me.Lock_Sleep
-        AddHandler Me.Sleep_Timer.Tick, AddressOf Me.Sleep_Timer_Tick
-        Me.NotifyIcon_SysTray.ShowBalloonTip(10, "MouseLock", "Sleeping for " & (Me.Lock_Sleep \ 1000) & " seconds before start locking the mouse...", ToolTipIcon.Info)
-        Me.Sleep_Timer.Start()
+#End Region
+
+#Region " Lock "
+
+    ''' <summary>
+    ''' Starts a lock, or stops it if one is active.
+    ''' </summary>
+    Private Sub ToggleLock()
+
+        If Me.lockSession.IsActive Then
+            Me.StopLock()
+        Else
+            Me.StartLock()
+        End If
     End Sub
 
-    ' Monitor Time
-    Private Sub Monitor_Time()
-        Me.Time_Timer.Interval = 1000
-        AddHandler Me.Time_Timer.Tick, AddressOf Me.Time_Timer_Tick
-        Me.Time_Timer.Start()
+    ''' <summary>
+    ''' Starts a lock, honoring the initial delay.
+    ''' </summary>
+    ''' <exception cref="InvalidOperationException">Thrown when a lock is already active.</exception>
+    Private Sub StartLock()
+
+        Dim delaySeconds As Integer = CInt(Me.Numeric_Delay.Value)
+        Dim delayMilliseconds As Integer = UserSettings.SecondsToMilliseconds(delaySeconds)
+
+        If Me.lockSession.Start(hasInitialDelay:=delayMilliseconds > 0) = LockState.Delaying Then
+            Me.DelayTimer.Interval = delayMilliseconds
+            Me.DelayTimer.Start()
+            Me.ShowBalloon($"Sleeping for {delaySeconds.ToString(CultureInfo.CurrentCulture)} seconds before start locking the mouse...")
+        Else
+            Me.BeginConfiningCursor()
+        End If
     End Sub
 
-    ' Monitor_Executables
-    Public Sub Monitor_Executables()
-        Me.Executable_Timer.Interval = 1000
-        AddHandler Me.Executable_Timer.Tick, AddressOf Me.Executable_Timer_Tick
-        Me.Executable_Timer.Start()
+    ''' <summary>
+    ''' Starts keeping the mouse pointer at the center of the screen.
+    ''' </summary>
+    Private Sub BeginConfiningCursor()
+
+        Me.LockTimer.Interval = CInt(Me.Numeric_Interval.Value)
+        Me.LockTimer.Start()
+        Me.ShowBalloon("MouseLock started!")
     End Sub
 
-    ' Monitor ToggleKey
-    Private Sub Toggle_Key_Global_Press(ByVal s As Object, ByVal e As Shortcut.HotKeyEventArgs) Handles Toggle_Key_Global.Press
-        Select Case Me.Running
-            Case False
-                Me.Running = True
-                Me.NotifyIcon_SysTray.ShowBalloonTip(10, "MouseLock", "MouseLock resumed...", ToolTipIcon.Info)
-            Case True
-                Me.Paused = True
-                Me.Running = False
-                Me.NotifyIcon_SysTray.ShowBalloonTip(10, "MouseLock", "MouseLock paused...", ToolTipIcon.Info)
-                Me.Lock_Timer.Interval = Me.Lock_Interval
+    ''' <summary>
+    ''' Stops the active lock.
+    ''' </summary>
+    Private Sub StopLock()
+
+        Me.DelayTimer.Stop()
+        Me.LockTimer.Stop()
+        If Me.lockSession.Stop() Then
+            Me.ShowBalloon("MouseLock stopped.")
+        End If
+    End Sub
+
+    ''' <summary>
+    ''' Performs the configured action when the monitored application ends.
+    ''' </summary>
+    Private Sub OnMonitoredApplicationExited()
+
+        Select Case Me.GetApplicationExitAction()
+            Case ApplicationExitAction.UnlockMouse
+                ' Only unlock; never start a lock that the user stopped manually.
+                If Me.lockSession.IsActive Then
+                    Me.StopLock()
+                End If
+            Case ApplicationExitAction.ExitMouseLock
+                Me.Close()
         End Select
     End Sub
 
-    ' Terminate
-    Private Sub Terminate()
-        If Me.Lock_Type = 2 Then
-            Me.Lock_Timer.Stop()
-            Me.Executable_Timer.Stop()
-        End If
-        If Me.Lock_Type = 3 Then
-            Select Case Me.IfAppNotRunning
-                Case 1
-                    Me.Lock_Timer.Stop()
-                    Me.Executable_Timer.Stop()
-                    Me.RadioButton_Lock_Application.Checked = False : Me.RadioButton_Lock_Application.Checked = True
-                Case 2
-                    Application.Exit()
-            End Select
-        End If
+#End Region
+
+#Region " UI State "
+
+    ''' <summary>
+    ''' Updates the controls that depend on the lock state.
+    ''' </summary>
+    Private Sub UpdateLockUi()
+
+        Dim isActive As Boolean = Me.lockSession.IsActive
+
+        Me.Label_Delay.Enabled = Not isActive
+        Me.Numeric_Delay.Enabled = Not isActive
+        Me.Label_S.Enabled = Not isActive
+        Me.Panel_Lock_Type.Enabled = Not isActive
+        Me.CheckBox_ToggleKey.Enabled = Not isActive
+        Me.ComboBox_ToggleKey_SpecialKey.Enabled = Not isActive AndAlso Me.CheckBox_ToggleKey.Checked
+        Me.ComboBox_ToggleKey_NormalKey.Enabled = Not isActive AndAlso Me.CheckBox_ToggleKey.Checked
+        Me.Label2.Enabled = Me.ComboBox_ToggleKey_NormalKey.Enabled
+
+        Dim buttonColor As Color = If(isActive, Color.DarkRed, Color.Green)
+        Me.Button_Lock_Unlock.ColorFillBlend.iColor(0) = buttonColor
+        Me.Button_Lock_Unlock.ColorFillBlend.iColor(1) = buttonColor
+        Me.Button_Lock_Unlock.ColorFillBlend.iColor(2) = buttonColor
+        Me.Button_Lock_Unlock.UpdateDimBlends()
+        Me.Button_Lock_Unlock.Image = If(isActive, My.Resources.Unlock_64x64, My.Resources.Lock_64x64)
+        Me.Button_Lock_Unlock.SideImage = Me.Button_Lock_Unlock.Image
+        Me.Button_Lock_Unlock.SideImageSize = New Size(42, 42)
+        Me.Button_Lock_Unlock.SideImageAlign = ContentAlignment.TopLeft
+        Me.Button_Lock_Unlock.Text = If(isActive, "Unlock", "Lock now")
+
+        Me.UpdateTrayMenu()
     End Sub
 
-    ' DoLock Or DoUnlock
-    Private Sub DoLock_Or_DoUnlock()
-        If Not Me.Running And Not Me.Paused Then
-            Me.Disable_Control(Me.Label_Delay)
-            Me.Disable_Control(Me.Numeric_Delay)
-            Me.Disable_Control(Me.Label_S)
-            Me.Disable_Control(Me.Panel_Lock_Type)
-            Me.Disable_Control(Me.CheckBox_ToggleKey)
-            Me.Disable_Control(Me.ComboBox_ToggleKey_NormalKey)
-            Me.Disable_Control(Me.ComboBox_ToggleKey_SpecialKey)
-            Me.Running = True
-            Me.Paused = False
-            Me.Change_Cbutton_Color(Me.Button_Lock_Unlock, Color.DarkRed, Color.DarkRed, Color.DarkRed)
-            Me.Button_Lock_Unlock.UpdateDimBlends()
-            Me.Button_Lock_Unlock.Image = My.Resources.Unlock_64x64
-            Me.Button_Lock_Unlock.SideImage = My.Resources.Unlock_64x64
-            Me.Button_Lock_Unlock.SideImageSize = New Point(42, 42)
-            Me.Button_Lock_Unlock.SideImageAlign = ContentAlignment.TopLeft
-            Me.Button_Lock_Unlock.Text = "Unlock"
-            If Not Me.Lock_Sleep = 0 Then Me.Sleep() Else Me.Lock()
-        ElseIf Me.Running Or Me.Paused Then
-            Me.Enable_Control(Me.Label_Delay)
-            Me.Enable_Control(Me.Numeric_Delay)
-            Me.Enable_Control(Me.Label_S)
-            Me.Enable_Control(Me.Panel_Lock_Type)
-            Me.Enable_Control(Me.CheckBox_ToggleKey)
-            Me.Enable_Control(Me.ComboBox_ToggleKey_NormalKey)
-            Me.Enable_Control(Me.ComboBox_ToggleKey_SpecialKey)
-            Me.Running = False
-            Me.Paused = False
-            Me.Terminate()
-            Me.NotifyIcon_SysTray.ShowBalloonTip(10, "MouseLock", "MouseLock stopped.", ToolTipIcon.Info)
-            Me.Change_Cbutton_Color(Me.Button_Lock_Unlock, Color.Green, Color.Green, Color.Green)
-            Me.Button_Lock_Unlock.Image = My.Resources.Lock_64x64
-            Me.Button_Lock_Unlock.SideImage = My.Resources.Lock_64x64
-            Me.Button_Lock_Unlock.SideImageSize = New Point(42, 42)
-            Me.Button_Lock_Unlock.SideImageAlign = ContentAlignment.TopLeft
-            Me.Button_Lock_Unlock.Text = "Lock now"
-        End If
+    ''' <summary>
+    ''' Updates the enabled state of the tray menu items.
+    ''' </summary>
+    Private Sub UpdateTrayMenu()
+
+        Dim isActive As Boolean = Me.lockSession.IsActive
+        Dim isWindowShown As Boolean = Me.Visible AndAlso Me.WindowState <> FormWindowState.Minimized
+
+        Me.ToolStrip_Lock.Enabled = Not isActive
+        Me.ToolStrip_Unlock.Enabled = isActive
+        Me.ToolStrip_Restore.Enabled = Not isWindowShown
+        Me.ToolStrip_Hide.Enabled = isWindowShown
     End Sub
 
-    ' Lock
-    Private Sub Lock()
-        Me.NotifyIcon_SysTray.ShowBalloonTip(10, "MouseLock", "MouseLock started!", ToolTipIcon.Info)
-        Me.Running = True
-        AddHandler Me.Lock_Timer.Tick, AddressOf Me.Lock_Tick
-        Me.Lock_Timer.Interval = Me.Lock_Interval
-        Me.Lock_Timer.Start()
-    End Sub
+    ''' <summary>
+    ''' Updates the controls and monitors that depend on the selected lock trigger.
+    ''' </summary>
+    Private Sub UpdateLockTriggerUi()
 
-    ' Sleep timer tick
-    Private Sub Sleep_Timer_Tick(sender As Object, e As EventArgs)
-        sender.stop()
-        If Me.Running Or Me.Paused Then Me.Lock()
-    End Sub
+        Dim isScheduled As Boolean = Me.selectedLockTrigger = LockTrigger.ScheduledTime
+        Dim isApplication As Boolean = Me.selectedLockTrigger = LockTrigger.ApplicationRunning
 
-    ' Lock timer tick
-    Private Sub Lock_Tick(sender As Object, e As EventArgs)
-        Me.Lock_Timer.Interval = Me.Lock_Interval
-        If Me.Running Then Cursor.Position = New Point(Me.Screen_Center_X, Me.Screen_Center_Y)
-    End Sub
+        Me.GTimePicker1.Enabled = isScheduled
+        Me.Button_Running_applications.Enabled = isApplication
+        Me.Label_Application_Name.Enabled = isApplication
+        Me.Label_Application_Not_Running.Enabled = isApplication
+        Me.ComboBox_Application_Not_Running.Enabled = isApplication
+        Me.TextBox_Application_Name.Enabled = isApplication
 
-    ' Time timer tick
-    Private Sub Time_Timer_Tick()
-        If Date.Now.ToShortTimeString.ToString() = Me.Time Then
-            Me.Time_Timer.Stop()
-            Me.DoLock_Or_DoUnlock()
-        End If
-    End Sub
-
-    ' Executable Timer Tick
-    Private Sub Executable_Timer_Tick()
-        If Me.Current_Executable_Name = Nothing Then
-            For Each x In Me.Executable_Names
-                Application.DoEvents()
-                If Not x.Length = 0 And x.ToLower.EndsWith(".exe") Then
-                    If Me.Process_Is_Running(x.Substring(0, x.Length - 4)) Then
-                        Me.Current_Executable_Name = x.Substring(0, x.Length - 4)
-                        If Not Me.Running Then Me.DoLock_Or_DoUnlock()
-                        'DoLock_Or_DoUnlock()
-                        Exit For
-                    End If
-                End If
-            Next
+        If isScheduled Then
+            Me.UpdateScheduledTrigger()
+            Me.ScheduleTimer.Start()
         Else
-            If Not Me.Process_Is_Running(Me.Current_Executable_Name) Then
-                Me.Current_Executable_Name = Nothing
-                Me.Executable_Timer.Stop()
-                Me.DoLock_Or_DoUnlock()
-            End If
+            Me.ScheduleTimer.Stop()
+            Me.scheduledTrigger = Nothing
         End If
 
+        If isApplication Then
+            Me.ProcessMonitorTimer.Start()
+        Else
+            Me.ProcessMonitorTimer.Stop()
+            Me.runningMonitoredProcess = Nothing
+            Me.CloseRunningApplicationsWindow()
+        End If
     End Sub
+
+    ''' <summary>
+    ''' Recreates the scheduled trigger from the time picker value.
+    ''' </summary>
+    Private Sub UpdateScheduledTrigger()
+
+        Dim timeOfDay As TimeSpan
+        If ScheduledTimeTrigger.TryParseTime(Me.GTimePicker1.Time, timeOfDay) Then
+            If Me.scheduledTrigger Is Nothing OrElse Me.scheduledTrigger.TimeOfDay <> timeOfDay Then
+                Me.scheduledTrigger = New ScheduledTimeTrigger(timeOfDay)
+            End If
+        Else
+            Me.scheduledTrigger = Nothing
+        End If
+    End Sub
+
+    ''' <summary>
+    ''' Shows or hides the main window from the tray.
+    ''' </summary>
+    Private Sub ToggleWindowVisibility()
+
+        If Me.Visible AndAlso Me.WindowState <> FormWindowState.Minimized Then
+            Me.CloseRunningApplicationsWindow()
+            Me.Hide()
+        Else
+            Me.Show()
+            Me.WindowState = FormWindowState.Normal
+            Me.Activate()
+        End If
+        Me.UpdateTrayMenu()
+    End Sub
+
+    ''' <summary>
+    ''' Shows a balloon tip from the tray icon.
+    ''' </summary>
+    ''' <param name="text">The text to show.</param>
+    Private Sub ShowBalloon(text As String)
+        Me.NotifyIcon_SysTray.ShowBalloonTip(Main.BalloonTimeout, Main.BalloonTitle, text, ToolTipIcon.Info)
+    End Sub
+
+#End Region
+
+#Region " Toggle Hot Key "
+
+    ''' <summary>
+    ''' Registers the toggle hot key from the current UI selection, replacing the previous one.
+    ''' Nothing is registered when the hot key is disabled or the selection is incomplete.
+    ''' </summary>
+    ''' <param name="showErrors"><see langword="True"/> to notify the user when the hot key is in use by another application.</param>
+    Private Sub RegisterToggleHotkey(showErrors As Boolean)
+
+        Me.UnregisterToggleHotkey()
+
+        If Not Me.CheckBox_ToggleKey.Checked Then
+            Return
+        End If
+
+        Dim modifiers As HotkeyModifiers
+        Dim key As Keys
+        If Not ToggleKeyParser.TryParse(Me.ComboBox_ToggleKey_SpecialKey.Text, Me.ComboBox_ToggleKey_NormalKey.Text, modifiers, key) Then
+            Return
+        End If
+
+        Try
+            Me.ToggleHotkey = New GlobalHotkey(modifiers, key)
+        Catch ex As HotkeyRegistrationException
+            If showErrors Then
+                Me.NotifyIcon_SysTray.ShowBalloonTip(Main.BalloonTimeout, Main.BalloonTitle, ex.Message, ToolTipIcon.Warning)
+            End If
+        End Try
+    End Sub
+
+    ''' <summary>
+    ''' Unregisters the toggle hot key, if any.
+    ''' </summary>
+    Private Sub UnregisterToggleHotkey()
+
+        If Me.ToggleHotkey IsNot Nothing Then
+            Me.ToggleHotkey.Dispose()
+            Me.ToggleHotkey = Nothing
+        End If
+    End Sub
+
+#End Region
+
+#Region " Running Applications Window "
+
+    ''' <summary>
+    ''' Determines whether the running applications window is open.
+    ''' </summary>
+    ''' <returns><see langword="True"/> if the window is open; otherwise, <see langword="False"/>.</returns>
+    Private Function IsRunningApplicationsWindowOpen() As Boolean
+        Return Me.runningApplicationsWindow IsNot Nothing AndAlso Not Me.runningApplicationsWindow.IsDisposed
+    End Function
+
+    ''' <summary>
+    ''' Closes the running applications window, if it is open.
+    ''' </summary>
+    Private Sub CloseRunningApplicationsWindow()
+
+        If Me.IsRunningApplicationsWindowOpen() Then
+            Me.runningApplicationsWindow.Close()
+        End If
+        Me.runningApplicationsWindow = Nothing
+    End Sub
+
+    ''' <summary>
+    ''' Moves this window so it stays docked at the left of the running applications window.
+    ''' </summary>
+    ''' <param name="secondaryWindow">The running applications window.</param>
+    Friend Sub FollowSecondaryWindow(secondaryWindow As Form)
+
+        If secondaryWindow Is Nothing Then
+            Throw New ArgumentNullException(NameOf(secondaryWindow))
+        End If
+
+        Me.isMovingFromSecondaryForm = True
+        Try
+            Me.Location = New Point(secondaryWindow.Left - Me.Width, secondaryWindow.Top)
+        Finally
+            Me.isMovingFromSecondaryForm = False
+        End Try
+    End Sub
+
+#End Region
+
+#Region " Settings "
+
+    ''' <summary>
+    ''' Loads the settings file, or returns the default settings when it does not exist or cannot be read.
+    ''' </summary>
+    ''' <returns>The settings.</returns>
+    Private Function LoadSettingsOrDefault() As UserSettings
+
+        If Not File.Exists(Me.settingsFilePath) Then
+            Return UserSettings.CreateDefault()
+        End If
+
+        Try
+            Return UserSettings.Load(Me.settingsFilePath)
+        Catch ex As Exception When TypeOf ex Is IOException OrElse TypeOf ex Is UnauthorizedAccessException
+            MessageBox.Show(Me, $"The settings file could not be read; the default settings will be used.{Environment.NewLine}{Environment.NewLine}{Me.settingsFilePath}{Environment.NewLine}{ex.Message}",
+                            Me.Text, MessageBoxButtons.OK, MessageBoxIcon.Warning)
+            Return UserSettings.CreateDefault()
+        End Try
+    End Function
+
+    ''' <summary>
+    ''' Applies the settings to the user interface.
+    ''' </summary>
+    ''' <param name="settings">The settings to apply.</param>
+    Private Sub ApplySettings(settings As UserSettings)
+
+        Me.isApplyingSettings = True
+        Try
+            Me.Numeric_Delay.Value = settings.InitialDelaySeconds
+            Me.Numeric_Interval.Value = settings.LockIntervalMilliseconds
+            Me.GTimePicker1.Time = settings.Time
+            Me.TextBox_Application_Name.Text = settings.Applications
+            Me.ComboBox_Application_Not_Running.SelectedIndex = CInt(settings.ApplicationExitAction) - 1
+            Me.ComboBox_ToggleKey_SpecialKey.SelectedIndex = Main.IndexOfItem(Me.ComboBox_ToggleKey_SpecialKey, settings.ModifierKey)
+            Me.ComboBox_ToggleKey_NormalKey.SelectedIndex = Main.IndexOfItem(Me.ComboBox_ToggleKey_NormalKey, settings.NormalKey)
+            Me.CheckBox_ToggleKey.Checked = settings.UseToggleKey
+            Me.CheckBox_SysTray.Checked = settings.MinimizeAtStartup
+            Me.CheckBox_Remember_settings.Checked = settings.RememberSettings
+
+            Select Case settings.LockTrigger
+                Case LockTrigger.Startup
+                    Me.RadioButton_Lock_Startup.Checked = True
+                Case LockTrigger.ScheduledTime
+                    Me.RadioButton_Lock_Time.Checked = True
+                Case LockTrigger.ApplicationRunning
+                    Me.RadioButton_Lock_Application.Checked = True
+                Case Else
+                    Me.RadioButton_Lock_Startup.Checked = False
+                    Me.RadioButton_Lock_Time.Checked = False
+                    Me.RadioButton_Lock_Application.Checked = False
+            End Select
+            Me.selectedLockTrigger = settings.LockTrigger
+        Finally
+            Me.isApplyingSettings = False
+        End Try
+
+        Me.UpdateLockTriggerUi()
+    End Sub
+
+    ''' <summary>
+    ''' Captures the current user interface state as settings.
+    ''' </summary>
+    ''' <returns>The settings.</returns>
+    Private Function CaptureSettings() As UserSettings
+
+        Dim timeOfDay As TimeSpan
+        Dim time As String = If(ScheduledTimeTrigger.TryParseTime(Me.GTimePicker1.Time, timeOfDay),
+                                ScheduledTimeTrigger.FormatTime(timeOfDay), UserSettings.DefaultTime)
+
+        Return New UserSettings() With {
+            .InitialDelaySeconds = CInt(Me.Numeric_Delay.Value),
+            .LockIntervalMilliseconds = CInt(Me.Numeric_Interval.Value),
+            .LockTrigger = Me.selectedLockTrigger,
+            .Time = time,
+            .Applications = Me.TextBox_Application_Name.Text,
+            .ApplicationExitAction = Me.GetApplicationExitAction(),
+            .UseToggleKey = Me.CheckBox_ToggleKey.Checked,
+            .ModifierKey = If(Me.ComboBox_ToggleKey_SpecialKey.SelectedIndex >= 0, Me.ComboBox_ToggleKey_SpecialKey.Text, UserSettings.DefaultModifierKey),
+            .NormalKey = If(Me.ComboBox_ToggleKey_NormalKey.SelectedIndex >= 0, Me.ComboBox_ToggleKey_NormalKey.Text, UserSettings.DefaultNormalKey),
+            .MinimizeAtStartup = Me.CheckBox_SysTray.Checked,
+            .RememberSettings = Me.CheckBox_Remember_settings.Checked
+        }
+    End Function
+
+    ''' <summary>
+    ''' Saves the settings when "Remember settings" is checked; otherwise deletes the settings file,
+    ''' so the next start uses the default settings.
+    ''' </summary>
+    Private Sub SaveOrDeleteSettings()
+
+        If Me.CheckBox_Remember_settings.Checked Then
+            Me.TrySaveSettings()
+            Return
+        End If
+
+        Try
+            If File.Exists(Me.settingsFilePath) Then
+                File.Delete(Me.settingsFilePath)
+            End If
+        Catch ex As Exception When TypeOf ex Is IOException OrElse TypeOf ex Is UnauthorizedAccessException
+            Me.ShowSettingsError("deleted", ex)
+        End Try
+    End Sub
+
+    ''' <summary>
+    ''' Saves the settings, notifying the user if the file cannot be written.
+    ''' </summary>
+    Private Sub TrySaveSettings()
+
+        Try
+            Directory.CreateDirectory(Path.GetDirectoryName(Me.settingsFilePath))
+            Me.CaptureSettings().Save(Me.settingsFilePath)
+        Catch ex As Exception When TypeOf ex Is IOException OrElse TypeOf ex Is UnauthorizedAccessException
+            Me.ShowSettingsError("saved", ex)
+        End Try
+    End Sub
+
+    ''' <summary>
+    ''' Notifies the user that the settings file could not be written or deleted.
+    ''' </summary>
+    ''' <param name="operation">The failed operation ("saved" or "deleted").</param>
+    ''' <param name="ex">The exception.</param>
+    Private Sub ShowSettingsError(operation As String, ex As Exception)
+        MessageBox.Show(Me, $"The settings file could not be {operation}.{Environment.NewLine}{Environment.NewLine}{Me.settingsFilePath}{Environment.NewLine}{ex.Message}",
+                        Me.Text, MessageBoxButtons.OK, MessageBoxIcon.Warning)
+    End Sub
+
+#End Region
+
+#Region " Theme "
+
+    ''' <summary>
+    ''' Applies the current theme to this window, its tray menu and its title bar.
+    ''' </summary>
+    Private Sub ApplyTheme()
+
+        Dim palette As ThemePalette = AppThemeService.CurrentPalette
+
+        Me.isApplyingTheme = True
+        Try
+            Me.ToggleSwitch_DarkTheme.Checked = palette.IsDark
+        Finally
+            Me.isApplyingTheme = False
+        End Try
+
+        ThemeManager.Apply(Me, palette, Me.Button_Lock_Unlock, Me.Button_Running_applications)
+        ThemeManager.ApplyToToolStrip(Me.ContextMenuStrip_SysTray, palette)
+
+        Dim previousLogo As Bitmap = Me.themedLogo
+        Using sourceLogo As Bitmap = My.Resources.Logo
+            Me.themedLogo = LogoRecolorizer.Recolor(sourceLogo, ThemePalette.BrandColor, Color.White,
+                                                    palette.Background, palette.LogoForeground)
+        End Using
+        Me.PictureBox_Logo.BackgroundImage = Me.themedLogo
+        previousLogo?.Dispose()
+
+        If Me.IsHandleCreated Then
+            DwmTitleBar.SetDarkMode(Me, palette.IsDark)
+        End If
+    End Sub
+
+#End Region
+
+#Region " Helpers "
+
+    ''' <summary>
+    ''' Gets the selected action for when the monitored application ends.
+    ''' </summary>
+    ''' <returns>The action.</returns>
+    Private Function GetApplicationExitAction() As ApplicationExitAction
+
+        Dim value As Integer = Me.ComboBox_Application_Not_Running.SelectedIndex + 1
+        Return If([Enum].IsDefined(GetType(ApplicationExitAction), value),
+                  CType(value, ApplicationExitAction), ApplicationExitAction.UnlockMouse)
+    End Function
+
+    ''' <summary>
+    ''' Gets the lock trigger stored in the <see cref="Control.Tag"/> of a lock type radio button.
+    ''' </summary>
+    ''' <param name="radioButton">The radio button.</param>
+    ''' <returns>The lock trigger.</returns>
+    ''' <exception cref="InvalidOperationException">Thrown when the tag is not a valid lock trigger.</exception>
+    Private Shared Function GetLockTrigger(radioButton As RadioButton) As LockTrigger
+
+        Dim value As Integer
+        If Not Integer.TryParse(Convert.ToString(radioButton.Tag, CultureInfo.InvariantCulture), NumberStyles.Integer, CultureInfo.InvariantCulture, value) OrElse
+           Not [Enum].IsDefined(GetType(LockTrigger), value) Then
+            Throw New InvalidOperationException($"The tag of '{radioButton.Name}' is not a valid lock trigger.")
+        End If
+        Return CType(value, LockTrigger)
+    End Function
+
+    ''' <summary>
+    ''' Gets the index of a combo box item by its text (case-insensitive).
+    ''' </summary>
+    ''' <param name="comboBox">The combo box.</param>
+    ''' <param name="text">The item text.</param>
+    ''' <returns>The item index.</returns>
+    ''' <exception cref="ArgumentException">Thrown when the item does not exist.</exception>
+    Private Shared Function IndexOfItem(comboBox As ComboBox, text As String) As Integer
+
+        Dim index As Integer = comboBox.FindStringExact(text)
+        If index < 0 Then
+            Throw New ArgumentException($"'{text}' is not an item of '{comboBox.Name}'.", NameOf(text))
+        End If
+        Return index
+    End Function
+
+    ''' <summary>
+    ''' Replaces the items of a combo box.
+    ''' </summary>
+    ''' <param name="comboBox">The combo box.</param>
+    ''' <param name="items">The new items.</param>
+    Private Shared Sub SetItems(comboBox As ComboBox, items As IEnumerable(Of String))
+
+        comboBox.BeginUpdate()
+        Try
+            comboBox.Items.Clear()
+            For Each item As String In items
+                comboBox.Items.Add(item)
+            Next
+        Finally
+            comboBox.EndUpdate()
+        End Try
+    End Sub
+
+    ''' <summary>
+    ''' Determines whether at least one process with the specified name is running.
+    ''' </summary>
+    ''' <param name="processName">The process name, without the ".exe" extension.</param>
+    ''' <returns><see langword="True"/> if the process is running; otherwise, <see langword="False"/>.</returns>
+    Private Shared Function IsProcessRunning(processName As String) As Boolean
+
+        Dim processes As Process() = Process.GetProcessesByName(processName)
+        Try
+            Return processes.Length <> 0
+        Finally
+            For Each p As Process In processes
+                p.Dispose()
+            Next
+        End Try
+    End Function
 
 #End Region
 

@@ -33,22 +33,20 @@ Partial Class Running_Applications
         Dim DesignerRectTracker5 As CButtonLib.DesignerRectTracker = New CButtonLib.DesignerRectTracker()
         Dim CBlendItems3 As CButtonLib.cBlendItems = New CButtonLib.cBlendItems()
         Dim DesignerRectTracker6 As CButtonLib.DesignerRectTracker = New CButtonLib.DesignerRectTracker()
-        Me.ListView_Running_Applications = New System.Windows.Forms.ListView()
+        Me.ListView_Running_Applications = New Global.MouseLock.CustomControls.ThemedListView()
         Me.ColumnHeader1 = CType(New System.Windows.Forms.ColumnHeader(), System.Windows.Forms.ColumnHeader)
         Me.Button_Select_None = New CButtonLib.CButton()
         Me.Button_Close = New CButtonLib.CButton()
-        Me.CButton1 = New CButtonLib.CButton()
+        Me.Button_Refresh = New CButtonLib.CButton()
         Me.SuspendLayout()
         '
         'ListView_Running_Applications
         '
         Me.ListView_Running_Applications.Activation = System.Windows.Forms.ItemActivation.OneClick
-        Me.ListView_Running_Applications.BackColor = System.Drawing.Color.FromArgb(CType(CType(0, Byte), Integer), CType(CType(74, Byte), Integer), CType(CType(121, Byte), Integer))
         Me.ListView_Running_Applications.CheckBoxes = True
         Me.ListView_Running_Applications.Columns.AddRange(New System.Windows.Forms.ColumnHeader() {Me.ColumnHeader1})
         Me.ListView_Running_Applications.Cursor = System.Windows.Forms.Cursors.Hand
         Me.ListView_Running_Applications.Dock = System.Windows.Forms.DockStyle.Top
-        Me.ListView_Running_Applications.ForeColor = System.Drawing.Color.Gainsboro
         Me.ListView_Running_Applications.FullRowSelect = True
         Me.ListView_Running_Applications.HeaderStyle = System.Windows.Forms.ColumnHeaderStyle.Nonclickable
         Me.ListView_Running_Applications.HideSelection = False
@@ -57,7 +55,7 @@ Partial Class Running_Applications
         Me.ListView_Running_Applications.MultiSelect = False
         Me.ListView_Running_Applications.Name = "ListView_Running_Applications"
         Me.ListView_Running_Applications.ShowGroups = False
-        Me.ListView_Running_Applications.Size = New System.Drawing.Size(184, 300)
+        Me.ListView_Running_Applications.Size = New System.Drawing.Size(184, 328)
         Me.ListView_Running_Applications.Sorting = System.Windows.Forms.SortOrder.Ascending
         Me.ListView_Running_Applications.TabIndex = 2
         Me.ListView_Running_Applications.UseCompatibleStateImageBehavior = False
@@ -89,7 +87,7 @@ Partial Class Running_Applications
         DesignerRectTracker2.TrackerRectangle = CType(resources.GetObject("DesignerRectTracker2.TrackerRectangle"), System.Drawing.RectangleF)
         Me.Button_Select_None.FocusPtTracker = DesignerRectTracker2
         Me.Button_Select_None.ImageIndex = 0
-        Me.Button_Select_None.Location = New System.Drawing.Point(0, 306)
+        Me.Button_Select_None.Location = New System.Drawing.Point(0, 334)
         Me.Button_Select_None.Name = "Button_Select_None"
         Me.Button_Select_None.Size = New System.Drawing.Size(87, 25)
         Me.Button_Select_None.TabIndex = 3
@@ -116,46 +114,46 @@ Partial Class Running_Applications
         DesignerRectTracker4.TrackerRectangle = CType(resources.GetObject("DesignerRectTracker4.TrackerRectangle"), System.Drawing.RectangleF)
         Me.Button_Close.FocusPtTracker = DesignerRectTracker4
         Me.Button_Close.ImageIndex = 0
-        Me.Button_Close.Location = New System.Drawing.Point(130, 306)
+        Me.Button_Close.Location = New System.Drawing.Point(130, 334)
         Me.Button_Close.Name = "Button_Close"
         Me.Button_Close.Size = New System.Drawing.Size(54, 25)
         Me.Button_Close.TabIndex = 4
         Me.Button_Close.Text = "Close"
         '
-        'CButton1
+        'Button_Refresh
         '
-        Me.CButton1.BorderColor = System.Drawing.Color.Black
+        Me.Button_Refresh.BorderColor = System.Drawing.Color.Black
         DesignerRectTracker5.IsActive = False
         DesignerRectTracker5.TrackerRectangle = CType(resources.GetObject("DesignerRectTracker5.TrackerRectangle"), System.Drawing.RectangleF)
-        Me.CButton1.CenterPtTracker = DesignerRectTracker5
+        Me.Button_Refresh.CenterPtTracker = DesignerRectTracker5
         CBlendItems3.iColor = New System.Drawing.Color() {System.Drawing.Color.DimGray, System.Drawing.Color.Gray, System.Drawing.Color.DimGray}
         CBlendItems3.iPoint = New Single() {0!, 0.5!, 1.0!}
-        Me.CButton1.ColorFillBlend = CBlendItems3
-        Me.CButton1.Corners.All = 2
-        Me.CButton1.Corners.LowerLeft = 2
-        Me.CButton1.Corners.LowerRight = 2
-        Me.CButton1.Corners.UpperLeft = 2
-        Me.CButton1.Corners.UpperRight = 2
-        Me.CButton1.Cursor = System.Windows.Forms.Cursors.Hand
-        Me.CButton1.FocalPoints.CenterPtX = 0.03448276!
-        Me.CButton1.FocalPoints.CenterPtY = 1.0!
+        Me.Button_Refresh.ColorFillBlend = CBlendItems3
+        Me.Button_Refresh.Corners.All = 2
+        Me.Button_Refresh.Corners.LowerLeft = 2
+        Me.Button_Refresh.Corners.LowerRight = 2
+        Me.Button_Refresh.Corners.UpperLeft = 2
+        Me.Button_Refresh.Corners.UpperRight = 2
+        Me.Button_Refresh.Cursor = System.Windows.Forms.Cursors.Hand
+        Me.Button_Refresh.FocalPoints.CenterPtX = 0.03448276!
+        Me.Button_Refresh.FocalPoints.CenterPtY = 1.0!
         DesignerRectTracker6.IsActive = False
         DesignerRectTracker6.TrackerRectangle = CType(resources.GetObject("DesignerRectTracker6.TrackerRectangle"), System.Drawing.RectangleF)
-        Me.CButton1.FocusPtTracker = DesignerRectTracker6
-        Me.CButton1.ImageIndex = 0
-        Me.CButton1.Location = New System.Drawing.Point(0, 335)
-        Me.CButton1.Name = "CButton1"
-        Me.CButton1.Size = New System.Drawing.Size(87, 25)
-        Me.CButton1.TabIndex = 5
-        Me.CButton1.Text = "Refresh"
+        Me.Button_Refresh.FocusPtTracker = DesignerRectTracker6
+        Me.Button_Refresh.ImageIndex = 0
+        Me.Button_Refresh.Location = New System.Drawing.Point(0, 363)
+        Me.Button_Refresh.Name = "Button_Refresh"
+        Me.Button_Refresh.Size = New System.Drawing.Size(87, 25)
+        Me.Button_Refresh.TabIndex = 5
+        Me.Button_Refresh.Text = "Refresh"
         '
         'Running_Applications
         '
         Me.AutoScaleDimensions = New System.Drawing.SizeF(6.0!, 13.0!)
         Me.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font
         Me.BackColor = System.Drawing.Color.FromArgb(CType(CType(0, Byte), Integer), CType(CType(74, Byte), Integer), CType(CType(121, Byte), Integer))
-        Me.ClientSize = New System.Drawing.Size(184, 362)
-        Me.Controls.Add(Me.CButton1)
+        Me.ClientSize = New System.Drawing.Size(184, 390)
+        Me.Controls.Add(Me.Button_Refresh)
         Me.Controls.Add(Me.Button_Close)
         Me.Controls.Add(Me.Button_Select_None)
         Me.Controls.Add(Me.ListView_Running_Applications)
@@ -168,9 +166,9 @@ Partial Class Running_Applications
         Me.ResumeLayout(False)
 
     End Sub
-    Friend WithEvents ListView_Running_Applications As System.Windows.Forms.ListView
+    Friend WithEvents ListView_Running_Applications As Global.MouseLock.CustomControls.ThemedListView
     Friend WithEvents ColumnHeader1 As System.Windows.Forms.ColumnHeader
     Friend WithEvents Button_Select_None As CButtonLib.CButton
     Friend WithEvents Button_Close As CButtonLib.CButton
-    Friend WithEvents CButton1 As CButtonLib.CButton
+    Friend WithEvents Button_Refresh As CButtonLib.CButton
 End Class

@@ -1,140 +1,229 @@
-﻿Imports MouseLock.Main
+﻿Option Strict On
+Option Explicit On
+Option Infer Off
 
+#Region " Imports "
+
+Imports MouseLock.Core
+Imports MouseLock.Interop
+Imports MouseLock.Theming
+
+#End Region
+
+''' <summary>
+''' Floating window, docked at the right of the main window, that lists the running applications
+''' and lets the user check the ones that must be monitored.
+''' </summary>
 Public Class Running_Applications
 
-    ' Dim Running_Applications_Timer As New Timer
-    ' Dim Listview_is_busy As Boolean = False
-    Dim CheckFlag As Boolean = False
+#Region " Constants "
 
-#Region " Load / Close / Move "
+    ''' <summary>
+    ''' The duration of the fade in/out animation, in milliseconds.
+    ''' </summary>
+    Private Const FadeDuration As Integer = 500
 
-    ' Load
-    Private Sub Running_Applications_Load(sender As Object, e As EventArgs) Handles Me.Load
-        Me.Location = New Point(Main.Location.X + (Main.Width), Main.Location.Y)
-        AnimateWindow(Me.Handle, 500, Animation.Show_Fade)
-        ' Me.Running_Applications_Timer.Interval = 5000
-        ' AddHandler Me.Running_Applications_Timer.Tick, AddressOf Me.Running_Applications_Timer_Tick
-        Me.Load_Listview()
+#End Region
+
+#Region " Fields "
+
+    ''' <summary>The main window that owns the list of application names.</summary>
+    Private ReadOnly mainWindow As Main
+
+    ''' <summary>Flag that suppresses the <see cref="ListView.ItemCheck"/> handler while the list is being populated.</summary>
+    Private isPopulating As Boolean
+
+#End Region
+
+#Region " Constructors "
+
+    ''' <summary>
+    ''' Initializes a new instance of the <see cref="Running_Applications"/> class.
+    ''' </summary>
+    ''' <remarks>Parameterless constructor required by the Windows Forms designer; the window cannot be shown
+    ''' without a main window, use <see cref="Running_Applications.New(Main)"/> instead.</remarks>
+    Public Sub New()
+        Me.InitializeComponent()
     End Sub
 
-    ' Close
-    Private Sub Running_Applications_FormClosing(sender As Object, e As FormClosingEventArgs) Handles Me.FormClosing
-        AnimateWindow(Me.Handle, 500, Animation.Hide_Fade)
-        '  Me.Running_Applications_Timer.Enabled = False
-        '  Me.Running_Applications_Timer.Dispose()
-    End Sub
+    ''' <summary>
+    ''' Initializes a new instance of the <see cref="Running_Applications"/> class.
+    ''' </summary>
+    ''' <param name="mainWindow">The main window that owns the list of application names.</param>
+    ''' <exception cref="ArgumentNullException">Thrown when <paramref name="mainWindow"/> is <see langword="Nothing"/>.</exception>
+    Friend Sub New(mainWindow As Main)
 
-    ' Move event
-    Private Sub Form2_Move(ByVal sender As Object, ByVal e As System.EventArgs) Handles MyBase.Move
-        Main.Moving_From_Secondary_Form = True
-        Main.Location = New Point(Me.Left - (Main.Width), Me.Top)
-        Main.Moving_From_Secondary_Form = False
+        If mainWindow Is Nothing Then
+            Throw New ArgumentNullException(NameOf(mainWindow))
+        End If
+
+        Me.InitializeComponent()
+        Me.mainWindow = mainWindow
+        AddHandler AppThemeService.ThemeChanged, AddressOf Me.AppThemeService_ThemeChanged
     End Sub
 
 #End Region
 
-#Region " Buttons "
+#Region " Form Events "
 
-    ' Button Select None
-    Private Sub Button_Select_None_ClickButtonArea(Sender As Object, e As MouseEventArgs) Handles Button_Select_None.ClickButtonArea
-
-        Me.ListView_Running_Applications.BeginUpdate()
-        For Each Item In Me.ListView_Running_Applications.CheckedItems
-            ' Application.DoEvents()
-            Item.checked = False
-        Next
-        Me.ListView_Running_Applications.EndUpdate()
+    ''' <summary>
+    ''' Applies the dark title bar as soon as the native window exists (it has no effect from the Load event).
+    ''' </summary>
+    ''' <param name="e">The event data.</param>
+    Protected Overrides Sub OnHandleCreated(e As EventArgs)
+        MyBase.OnHandleCreated(e)
+        DwmTitleBar.SetDarkMode(Me, AppThemeService.Current = AppTheme.Dark)
     End Sub
 
-    ' Button_Close
-    Private Sub Button_Close_ClickButtonArea(Sender As Object, e As MouseEventArgs) Handles Button_Close.ClickButtonArea
-        ' Me.Running_Applications_Timer.Stop()
-        Me.Close()
+    ''' <summary>
+    ''' Handles the <see cref="Form.Load"/> event of the form.
+    ''' </summary>
+    Private Sub Running_Applications_Load(sender As Object, e As EventArgs) Handles MyBase.Load
+
+        If Me.mainWindow Is Nothing Then
+            Throw New InvalidOperationException($"{NameOf(Running_Applications)} must be created with its main window.")
+        End If
+
+        Me.ApplyTheme()
+        Me.Location = New Point(Me.mainWindow.Right, Me.mainWindow.Top)
+        Me.LoadListView()
+        NativeMethods.AnimateWindow(Me.Handle, Running_Applications.FadeDuration, AnimateWindowFlags.Blend)
     End Sub
 
-#End Region
+    ''' <summary>
+    ''' Handles the <see cref="Form.FormClosing"/> event of the form.
+    ''' </summary>
+    Private Sub Running_Applications_FormClosing(sender As Object, e As FormClosingEventArgs) Handles MyBase.FormClosing
 
-#Region " ListView "
-
-    ' Listview
-    Private Sub Load_Listview()
-        Dim ProcessesName As New List(Of String)
-
-        Me.ListView_Running_Applications.BeginUpdate()
-        Me.ListView_Running_Applications.Items.Clear()
-        ProcessesName.Clear()
-        For Each App As Process In Process.GetProcesses()
-            ' Application.DoEvents()
-            If Not ProcessesName.Contains(App.ProcessName.ToLower & ".exe") Then
-                If Main.TextBox_Application_Name.Text.ToLower.Contains(App.ProcessName.ToLower & ".exe") Then
-                    Me.CheckFlag = True
-                    Me.ListView_Running_Applications.Items.Add(App.ProcessName & ".exe").Checked = True
-                    Me.CheckFlag = False
-                Else
-                    Me.ListView_Running_Applications.Items.Add(App.ProcessName & ".exe")
-                End If
-                ProcessesName.Add(App.ProcessName.ToLower & ".exe")
-            End If
-        Next
-
-        Me.ListView_Running_Applications.EndUpdate()
-        ' Me.Running_Applications_Timer.Start()
-    End Sub
-
-    ' Listview [ Checked event ]
-    Private Sub ListView_Running_Applications_ItemCheck(sender As Object, e As ItemCheckEventArgs) Handles ListView_Running_Applications.ItemCheck
-
-        'MsgBox(Main.Current_Executable_Name)
-
-        If Not Me.CheckFlag Then
-            If Main.TextBox_Application_Name.Text.ToLower.Contains(sender.Items(e.Index).Text.ToLower) Then
-                'If (Main.Current_Executable_Name & ".exe") = sender.Items(e.Index).Text.ToLower Then Main.Current_Executable_Name = Nothing
-                Main.TextBox_Application_Name.Text = Main.TextBox_Application_Name.Text.ToLower.Replace(sender.Items(e.Index).Text.ToLower, "")
-            Else
-                Main.TextBox_Application_Name.Text += ";" & sender.Items(e.Index).Text
-                Main.Monitor_Executables()
-            End If
+        If Me.Visible Then
+            NativeMethods.AnimateWindow(Me.Handle, Running_Applications.FadeDuration, AnimateWindowFlags.Blend Or AnimateWindowFlags.Hide)
         End If
     End Sub
 
-    ' Restric resizing
-    Private Sub ListView_Running_Applications_ColumnWidthChanging(sender As Object, e As ColumnWidthChangingEventArgs) Handles ListView_Running_Applications.ColumnWidthChanging
-        e.Cancel = True
-        e.NewWidth = sender.Columns(e.ColumnIndex).Width
+    ''' <summary>
+    ''' Handles the <see cref="Form.FormClosed"/> event of the form.
+    ''' </summary>
+    Private Sub Running_Applications_FormClosed(sender As Object, e As FormClosedEventArgs) Handles MyBase.FormClosed
+        RemoveHandler AppThemeService.ThemeChanged, AddressOf Me.AppThemeService_ThemeChanged
     End Sub
 
-    ' Running_Applications_Timer_Tick
-    'Private Sub Running_Applications_Timer_Tick()
-    '    If Not Me.Listview_is_busy Then
-    '        Me.Running_Applications_Timer.Stop()
-    '        Me.Load_Listview()
-    '    End If
-    'End Sub
+    ''' <summary>
+    ''' Handles the <see cref="Control.Move"/> event of the form, to keep the main window docked at the left.
+    ''' </summary>
+    Private Sub Running_Applications_Move(sender As Object, e As EventArgs) Handles MyBase.Move
 
-    ' Listview is busy
-    'Private Sub ListView_Running_Applications_Mouse1(sender As Object, e As MouseEventArgs) Handles _
-    '    ListView_Running_Applications.MouseDown,
-    '    ListView_Running_Applications.MouseClick
+        If Me.mainWindow IsNot Nothing AndAlso Me.Visible Then
+            Me.mainWindow.FollowSecondaryWindow(Me)
+        End If
+    End Sub
 
-    '    Me.Listview_is_busy = True
-    'End Sub
-    'Private Sub ListView_Running_Applications_Mouse2(sender As Object, e As EventArgs) Handles ListView_Running_Applications.MouseCaptureChanged
-    '    Me.Listview_is_busy = True
-    'End Sub
+    ''' <summary>
+    ''' Handles the <see cref="AppThemeService.ThemeChanged"/> event.
+    ''' </summary>
+    Private Sub AppThemeService_ThemeChanged(sender As Object, e As EventArgs)
+        Me.ApplyTheme()
+    End Sub
 
-    '' Listview is not busy
-    'Private Sub ListView_Running_Applications_Mouse3(sender As Object, e As EventArgs) Handles _
-    'ListView_Running_Applications.Leave,
-    'ListView_Running_Applications.MouseLeave
+#End Region
 
-    '    Me.Listview_is_busy = False
-    'End Sub
-    'Private Sub ListView_Running_Applications_Mouse4(sender As Object, e As MouseEventArgs) Handles ListView_Running_Applications.MouseUp
-    '    Me.Listview_is_busy = False
-    'End Sub
+#Region " Control Events "
 
-    Private Sub CButton1_ClickButtonArea(Sender As Object, e As MouseEventArgs) Handles CButton1.ClickButtonArea
-        Load_Listview()
+    ''' <summary>
+    ''' Handles the <see cref="CButtonLib.CButton.ClickButtonArea"/> event of the "Select none" button.
+    ''' </summary>
+    Private Sub Button_Select_None_ClickButtonArea(sender As Object, e As MouseEventArgs) Handles Button_Select_None.ClickButtonArea
+
+        Me.ListView_Running_Applications.BeginUpdate()
+        Try
+            For Each item As ListViewItem In Me.ListView_Running_Applications.CheckedItems.Cast(Of ListViewItem)().ToArray()
+                item.Checked = False
+            Next
+        Finally
+            Me.ListView_Running_Applications.EndUpdate()
+        End Try
+    End Sub
+
+    ''' <summary>
+    ''' Handles the <see cref="CButtonLib.CButton.ClickButtonArea"/> event of the "Refresh" button.
+    ''' </summary>
+    Private Sub Button_Refresh_ClickButtonArea(sender As Object, e As MouseEventArgs) Handles Button_Refresh.ClickButtonArea
+        Me.LoadListView()
+    End Sub
+
+    ''' <summary>
+    ''' Handles the <see cref="CButtonLib.CButton.ClickButtonArea"/> event of the "Close" button.
+    ''' </summary>
+    Private Sub Button_Close_ClickButtonArea(sender As Object, e As MouseEventArgs) Handles Button_Close.ClickButtonArea
+        Me.Close()
+    End Sub
+
+    ''' <summary>
+    ''' Handles the <see cref="ListView.ItemCheck"/> event of the list, adding or removing the application name.
+    ''' </summary>
+    Private Sub ListView_Running_Applications_ItemCheck(sender As Object, e As ItemCheckEventArgs) Handles ListView_Running_Applications.ItemCheck
+
+        If Me.isPopulating Then
+            Return
+        End If
+
+        Dim executableName As String = Me.ListView_Running_Applications.Items(e.Index).Text
+        Me.mainWindow.ApplicationListText = If(e.NewValue = CheckState.Checked,
+                                               ProcessNameList.Add(Me.mainWindow.ApplicationListText, executableName),
+                                               ProcessNameList.Remove(Me.mainWindow.ApplicationListText, executableName))
+    End Sub
+
+    ''' <summary>
+    ''' Handles the <see cref="ListView.ColumnWidthChanging"/> event of the list, to prevent resizing the column.
+    ''' </summary>
+    Private Sub ListView_Running_Applications_ColumnWidthChanging(sender As Object, e As ColumnWidthChangingEventArgs) Handles ListView_Running_Applications.ColumnWidthChanging
+
+        e.Cancel = True
+        e.NewWidth = Me.ListView_Running_Applications.Columns(e.ColumnIndex).Width
+    End Sub
+
+#End Region
+
+#Region " Private Methods "
+
+    ''' <summary>
+    ''' Fills the list with the distinct names of the running processes, checking the monitored ones.
+    ''' </summary>
+    Private Sub LoadListView()
+
+        Dim executableNames As New SortedSet(Of String)(StringComparer.OrdinalIgnoreCase)
+        For Each runningProcess As Process In Process.GetProcesses()
+            Using runningProcess
+                executableNames.Add($"{runningProcess.ProcessName}{ProcessNameList.ExecutableExtension}")
+            End Using
+        Next
+
+        Dim monitoredText As String = Me.mainWindow.ApplicationListText
+        Me.isPopulating = True
+        Me.ListView_Running_Applications.BeginUpdate()
+        Try
+            Me.ListView_Running_Applications.Items.Clear()
+            For Each executableName As String In executableNames
+                Dim item As New ListViewItem(executableName) With {
+                    .Checked = ProcessNameList.Contains(monitoredText, executableName)
+                }
+                Me.ListView_Running_Applications.Items.Add(item)
+            Next
+        Finally
+            Me.ListView_Running_Applications.EndUpdate()
+            Me.isPopulating = False
+        End Try
+    End Sub
+
+    ''' <summary>
+    ''' Applies the current theme to this window and its title bar.
+    ''' </summary>
+    Private Sub ApplyTheme()
+
+        Dim palette As ThemePalette = AppThemeService.CurrentPalette
+        ThemeManager.Apply(Me, palette)
+        If Me.IsHandleCreated Then
+            DwmTitleBar.SetDarkMode(Me, palette.IsDark)
+        End If
     End Sub
 
 #End Region

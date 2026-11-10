@@ -21,9 +21,9 @@ winforms
 <div align="center">
   <img src="/Images/App.ico" width="100" alt="Logo">
   
-  <h1>MouseLock GUI</h1>
+  <h1>MouseLock (GUI)</h1>
 
-### ks the mouse pointer at the center of the screen until a specified key is pressed.
+### Locks the mouse pointer at the center of the screen until a specified key is pressed.
 
 </div>
 
@@ -77,9 +77,9 @@ I built this humble utility to solve this exact irritation, giving gamers an aut
 ## 🖼️ Screenshots
 
 <p align="center">
-  <img src="Images/1.png" alt="Screenshot 1" width="38%">
-  <img src="Images/2.png" alt="Screenshot 2" width="38%">
-  <img src="Images/3.png" alt="Screenshot 3" width="20%">
+  <img src="Images/screenshot01png" alt="Screenshot 1" width="38%">  <img src="Images/screenshot02.png" alt="Screenshot 2" width="38%">
+  <br><br>
+  <img src="Images/screenshot03.png" alt="Screenshot 3" width="20%">
 </p>
 
 ## 🤖 Features
